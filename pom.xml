@@ -35,6 +35,7 @@
         <module>s2tbx-cache-ui</module>
         <module>s2tbx-s2msi-reader</module>
         <module>s2tbx-s2msi-reader-ui</module>
+        <module>s2tbx-image-writer</module>
         <module>s2tbx-jp2-reader</module>
         <module>lib-openjpeg</module>
         <module>lib-gdal</module>
