@@ -5,15 +5,23 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.xml.stream.*;
 import java.awt.image.RenderedImage;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.StringWriter;
+
 
 /**
  * Class that prints the JP2 XML header
  * Created by rdumitrascu on 11/15/2016.
  */
 public class JP2XmlGenerator {
-    private  JP2XmlGenerator(){
+    private final FileOutputStream fileOutputStream;
+    private final IIOMetadata imgMetadata;
+    private final RenderedImage renderedImage;
+    private String srsName;
+    public  JP2XmlGenerator(FileOutputStream fileOutputStream, RenderedImage img, IIOMetadata metadata,String srsName )throws XMLStreamException{
+        this.fileOutputStream = fileOutputStream;
+        this.imgMetadata = metadata;
+        this.renderedImage = img;
+        xmlJP2WriteStream(fileOutputStream,renderedImage,imgMetadata, srsName);
     }
     /**
      *
@@ -22,7 +30,8 @@ public class JP2XmlGenerator {
      * @param metadata
      * @throws XMLStreamException
      */
-    public static void xmlJP2WriteStream(FileOutputStream fileOutputStream, RenderedImage img, IIOMetadata metadata)throws XMLStreamException {
+    private void xmlJP2WriteStream(FileOutputStream fileOutputStream, RenderedImage img, IIOMetadata metadata,String srsName ) throws XMLStreamException {
+
         int depth=0;
         StringWriter sw = new StringWriter();
         XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
@@ -88,7 +97,7 @@ public class JP2XmlGenerator {
         depth++;indent(depth,tmpWriter );
         tmpWriter.writeStartElement("gml:Point");
         tmpWriter.writeAttribute("gml:id","P0001"); //TO DO
-        tmpWriter.writeAttribute("srsName","urn:ogc:def:crs:EPSG::32629"); //TO DO
+        tmpWriter.writeAttribute("srsName",srsName); //TO DO
         depth++;indent(depth,tmpWriter );
         tmpWriter.writeStartElement("gml:pos");
         tmpWriter.writeCharacters("500010 3800010"); //TO DO
@@ -99,12 +108,12 @@ public class JP2XmlGenerator {
         tmpWriter.writeEndElement();
         indent(depth,tmpWriter );
         tmpWriter.writeStartElement("gml:offsetVector");
-        tmpWriter.writeAttribute("srsName","urn:ogc:def:crs:EPSG::32629"); //TO DO
+        tmpWriter.writeAttribute("srsName",srsName); //TO DO
         tmpWriter.writeCharacters("60 0"); //TO DO
         tmpWriter.writeEndElement();
         indent(depth,tmpWriter );
         tmpWriter.writeStartElement("gml:offsetVector");
-        tmpWriter.writeAttribute("srsName","urn:ogc:def:crs:EPSG::32629"); //TO DO
+        tmpWriter.writeAttribute("srsName",srsName); //TO DO
         tmpWriter.writeCharacters("0 -60"); //TO DO
         tmpWriter.writeEndElement();
         depth--;indent(depth,tmpWriter );
@@ -141,7 +150,7 @@ public class JP2XmlGenerator {
         tmpWriter.flush();
         tmpWriter.close();
     }
-    private static void indent(int depth,XMLStreamWriter tmpXMLWriter) throws XMLStreamException {
+    private  void indent(int depth,XMLStreamWriter tmpXMLWriter) throws XMLStreamException {
         tmpXMLWriter.writeCharacters("\n");
         for(int index=0; index<depth;index++){
             tmpXMLWriter.writeCharacters("  ");

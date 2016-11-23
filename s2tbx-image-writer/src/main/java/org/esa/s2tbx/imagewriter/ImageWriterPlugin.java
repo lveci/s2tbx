@@ -7,6 +7,7 @@ import org.esa.s2tbx.dataio.openjp2.OpenJP2Encoder;
 import sun.awt.image.SunWritableRaster;
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.FileImageInputStream;
 import javax.xml.stream.*;
 import java.awt.*;
@@ -24,23 +25,19 @@ public class ImageWriterPlugin extends ImageWriter {
     private static final int DEFAULT_NUMBER_OF_RESOLUTIONS = 1;
     private static final int XML_BOX_HEADER_TYPE = 0x786D6C20;
     private static final Logger logger = Logger.getLogger(ImageWriterPlugin.class.getName());
-    private static final int[][] bandOffsets = {{0},
-            {0, 1},
-            {0, 1, 2},
-            {0, 1, 2, 3}};
 
     private File fileOutput;
     private IIOImage sourceImage;
     private RenderedImage renderedImage;
-    private Rectangle sourceRegion;
     private int numbResolution = DEFAULT_NUMBER_OF_RESOLUTIONS;
     private IIOMetadata metadata;
     private BoxReader boxReader;
+    private int headerSize;
     /**
      *
      */
-    public ImageWriterPlugin() {
-        super(null);
+    public ImageWriterPlugin(ImageWriterSpi originator) {
+        super(originator);
     }
 
     /**
@@ -73,7 +70,7 @@ public class ImageWriterPlugin extends ImageWriter {
 
     @Override
     public IIOMetadata getDefaultStreamMetadata(ImageWriteParam param) {
-         //return new JP2MetadataFormat();
+        //return new JP2MetadataFormat();
         return null;
     }
 
@@ -142,61 +139,16 @@ public class ImageWriterPlugin extends ImageWriter {
         if (streamMetadata != null) {
             this.metadata = streamMetadata;
         }
-        int headerSize = 0;
         this.sourceImage = image;
         this.renderedImage = sourceImage.getRenderedImage();
-        this.sourceRegion = new Rectangle(0, 0, renderedImage.getWidth(), renderedImage.getHeight());
-        int sourceXSubsampling = 1;
-        int sourceYSubsampling = 1;
-        int[] sourceBands = null;
-        if (param != null) {
-            if (param.getSourceRegion() != null) {
-                sourceRegion = sourceRegion.intersection(param.getSourceRegion());
-            }
-            sourceXSubsampling = param.getSourceXSubsampling();
-            sourceYSubsampling = param.getSourceYSubsampling();
-            sourceBands = param.getSourceBands();
-            int subsampleXOffset = param.getSubsamplingXOffset();
-            int subsampleYOffset = param.getSubsamplingYOffset();
-            sourceRegion.x += subsampleXOffset;
-            sourceRegion.y += subsampleYOffset;
-            sourceRegion.width -= subsampleXOffset;
-            sourceRegion.height -= subsampleYOffset;
-        }
-        int renderedImageHeight = this.renderedImage.getHeight();
-        int renderedImageWidth = this.renderedImage.getWidth();
-        Raster imRas = renderedImage.getData(sourceRegion);
-        int numBands = imRas.getNumBands();
-        int[] bandSizes = imRas.getSampleModel().getSampleSize();
-        int dataType = getDataType(bandSizes[0]);
-        int lineSize = renderedImageWidth * numBands;
-        DataBuffer buffer = getSpecificDataBuffer(dataType, lineSize);
-        int[] bandOffs = bandOffsets[0];
-        SampleModel sampleModel = new PixelInterleavedSampleModel(dataType, renderedImageWidth, renderedImageHeight, 1, renderedImageWidth, bandOffs);
-        try {
-            final WritableRaster wRaster = new SunWritableRaster(sampleModel, buffer, new Point(0, 0));
-            try (OpenJP2Encoder jp2Encoder = new OpenJP2Encoder(renderedImage)) {
-                Path outputStreamPath = FileSystems.getDefault().getPath(this.fileOutput.getPath());
-                jp2Encoder.write(outputStreamPath, getNumberResolutions());
-            } catch (Exception e) {
-                logger.warning(e.getMessage());
-            }
-        } catch (Exception exp) {
-            logger.warning(exp.getMessage());
-        }
-        try (FileImageInputStream file = new FileImageInputStream(this.fileOutput)) {
-            boxReader = new BoxReader(file, file.length(), new BoxListener());
-            boxReader.getFileLength();
-            Box box =null;
-            do {
-                box = boxReader.readBox();
-                if(box.getSymbol().equals("jp2c"))
-                    headerSize = (int)box.getPosition();
-            }
-            while (!box.getSymbol().equals("jp2c")) ;
-        } catch (IOException e) {
+        try (OpenJP2Encoder jp2Encoder = new OpenJP2Encoder(renderedImage)) {
+            Path outputStreamPath = FileSystems.getDefault().getPath(this.fileOutput.getPath());
+            jp2Encoder.write(outputStreamPath, getNumberResolutions());
+        } catch (Exception e) {
             logger.warning(e.getMessage());
         }
+        this.headerSize= computeHeaderSize();
+
         File tempFile = File.createTempFile(this.fileOutput.getName(), ".tmp");
         if (fileOutput.exists()) {
             try (RandomAccessFile file = new RandomAccessFile(this.fileOutput, "rws")) {
@@ -217,7 +169,7 @@ public class ImageWriterPlugin extends ImageWriter {
                 file.write(headerStream,0,headerSize);
                 File tempXMLFile = File.createTempFile(this.fileOutput.getName(), ".xml");
                 try (FileOutputStream fop = new FileOutputStream(tempXMLFile,true )){
-                    JP2XmlGenerator.xmlJP2WriteStream(fop, this.renderedImage, this.metadata);
+                    new JP2XmlGenerator(fop, this.renderedImage, this.metadata, "urn:ogc:def:crs:EPSG::32629");
                 } catch (XMLStreamException e) {
                     logger.warning(e.getMessage());
                 }
@@ -249,54 +201,6 @@ public class ImageWriterPlugin extends ImageWriter {
     }
 
     /**
-     * @param bandSize the size of the band
-     * @return returns the data Type for the specific band size
-     * @throws IIOException
-     */
-    private int getDataType(final int bandSize) throws IIOException {
-        switch (bandSize) {
-            case 8:
-                return DataBuffer.TYPE_BYTE;
-            case 16:
-                return DataBuffer.TYPE_USHORT;
-            case 32:
-                return DataBuffer.TYPE_INT;
-            case 64:
-                return DataBuffer.TYPE_DOUBLE;
-            default:
-                logger.warning("Sample size not standard ");
-                throw new IIOException("Sample size must be 8, 16, 32 or 64");
-        }
-    }
-
-    /**
-     *  Returns a dataBuffer for the specific dataBufferSize
-     * @param dataBufferSize the dataBuffer size
-     * @param lineSize
-     * @param <T>
-     * @return
-     * @throws IIOException
-     */
-    public <T extends DataBuffer> T getSpecificDataBuffer(final int dataBufferSize, int lineSize) throws IIOException {
-        switch (dataBufferSize) {
-            case DataBuffer.TYPE_BYTE:
-                return (T) new DataBufferByte(lineSize);
-            case DataBuffer.TYPE_USHORT:
-                return (T) new DataBufferUShort(lineSize);
-            case DataBuffer.TYPE_SHORT:
-                return (T) new DataBufferUShort(lineSize);
-            case DataBuffer.TYPE_INT:
-            case DataBuffer.TYPE_FLOAT:
-                return (T) new DataBufferInt(lineSize);
-            case DataBuffer.TYPE_DOUBLE:
-                return (T) new DataBufferDouble(lineSize);
-            default:
-                logger.warning("Sample size not standard ");
-                throw new IIOException("Sample size must be 8, 16, 32 or 64");
-        }
-    }
-
-    /**
      * sets the number of resolutions for the image to be encoded
      * @param numResolutions the number of resolutions
      */
@@ -321,5 +225,28 @@ public class ImageWriterPlugin extends ImageWriter {
         public void unknownBoxSeen(Box box) {
             System.out.println("unknown box: " + BoxType.encode4b(box.getCode()));
         }
+    }
+
+    /**
+     * Searches for the location of the code continuous stream in the encoded image
+     *
+     * @return returns the size of the header from the original encoded image
+     */
+    private int computeHeaderSize(){
+        int headerSize = 0;
+        try (FileImageInputStream file = new FileImageInputStream(this.fileOutput)) {
+            boxReader = new BoxReader(file, file.length(), new BoxListener());
+            boxReader.getFileLength();
+            Box box =null;
+            do {
+                box = boxReader.readBox();
+                if(box.getSymbol().equals("jp2c"))
+                    headerSize = (int)box.getPosition();
+            }
+            while (!box.getSymbol().equals("jp2c")) ;
+        } catch (IOException e) {
+            logger.warning(e.getMessage());
+        }
+        return headerSize;
     }
 }
