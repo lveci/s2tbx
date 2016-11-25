@@ -23,7 +23,6 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
     private static final String[] _extraStreamMetadataFormatClassNames  = null;
 
     private static final boolean  _supportsStandardImageMetadataFormat = true;
-
     private static final String[] _extraImageMetadataFormatNames       = null;
     private static final String[] _extraImageMetadataFormatClassNames  = null;
     private static final String   _writerClassName = "org.esa.s2tbx.imagewriter.ImageWriterPlugin";
@@ -70,8 +69,8 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
             }
         }
         // Ensure bitDepth is between 1 and 8
-        if (bitDepth < 1 || bitDepth > 8) {
-            logger.warning("Wrong number of bands");
+        if (bitDepth < 1 || bitDepth > 16) {
+            logger.warning("wrong bitDepth for input image");
             return false;
         }
         return true;

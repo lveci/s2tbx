@@ -4,13 +4,11 @@ import org.esa.s2tbx.dataio.jp2.Box;
 import org.esa.s2tbx.dataio.jp2.BoxReader;
 import org.esa.s2tbx.dataio.jp2.BoxType;
 import org.esa.s2tbx.dataio.openjp2.OpenJP2Encoder;
-import sun.awt.image.SunWritableRaster;
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.FileImageInputStream;
 import javax.xml.stream.*;
-import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import java.nio.file.FileSystems;
@@ -147,57 +145,46 @@ public class ImageWriterPlugin extends ImageWriter {
         } catch (Exception e) {
             logger.warning(e.getMessage());
         }
-        this.headerSize= computeHeaderSize();
 
-        File tempFile = File.createTempFile(this.fileOutput.getName(), ".tmp");
+        //  if(this.metadata!=null) {
+        this.headerSize= computeHeaderSize();
         if (fileOutput.exists()) {
             try (RandomAccessFile file = new RandomAccessFile(this.fileOutput, "rws")) {
-                int fileLenght = (int)file.length();
+                int fileLenght = (int) file.length();
                 byte[] headerStream = new byte[headerSize];
-                file.read(headerStream,0,headerSize);
+                file.read(headerStream, 0, headerSize);
                 file.seek(0);
-                try(RandomAccessFile temporatyFile = new RandomAccessFile(tempFile, "rws")){
-                    byte[] ccStream = new byte[(int) file.length()];
-                    file.seek(headerSize);
-                    file.read(ccStream,headerSize, fileLenght-headerSize);
-                    temporatyFile.write(ccStream,headerSize,ccStream.length-headerSize);
-                } catch (IOException e) {
-                    logger.warning(e.getMessage());
-                }
-                file.read(headerStream,0,headerSize);
+                byte[] ccStream = new byte[(int) file.length()-headerSize];
+                file.seek(headerSize);
+                file.read(ccStream, 0, fileLenght - headerSize);
                 file.setLength(0);
-                file.write(headerStream,0,headerSize);
+                file.write(headerStream, 0, headerSize);
                 File tempXMLFile = File.createTempFile(this.fileOutput.getName(), ".xml");
-                try (FileOutputStream fop = new FileOutputStream(tempXMLFile,true )){
+                try (FileOutputStream fop = new FileOutputStream(tempXMLFile, true)) {
                     new JP2XmlGenerator(fop, this.renderedImage, this.metadata, "urn:ogc:def:crs:EPSG::32629");
                 } catch (XMLStreamException e) {
                     logger.warning(e.getMessage());
                 }
-                try(RandomAccessFile temporatyFile = new RandomAccessFile(tempXMLFile, "rws")){
+                try (RandomAccessFile temporatyFile = new RandomAccessFile(tempXMLFile, "rws")) {
                     byte[] xmlStream = new byte[(int) temporatyFile.length()];
-                    temporatyFile.read(xmlStream,0,(int) temporatyFile.length());
+                    temporatyFile.read(xmlStream, 0, (int) temporatyFile.length());
                     file.writeInt(8 + xmlStream.length);
                     file.writeInt(XML_BOX_HEADER_TYPE);
                     file.write(xmlStream);
-                }catch (IOException e) {
+                } catch (IOException e) {
                     logger.warning(e.getMessage());
                 }
-                try(RandomAccessFile temporatyFile = new RandomAccessFile(tempFile, "rws")){
-                    byte[] ccStream = new byte[(int) temporatyFile.length()];
-                    temporatyFile.read(ccStream,0,(int) temporatyFile.length());
-                    file.write(ccStream);
-                }catch (IOException e) {
-                    logger.warning(e.getMessage());
+                file.write(ccStream);
+                if(tempXMLFile.exists()){
+                    tempXMLFile.delete();
                 }
             } catch (IOException e) {
                 logger.warning(e.getMessage());
-            }catch (Exception e) {
+            } catch (Exception e) {
                 logger.warning(e.getMessage());
             }
         }
-        if(tempFile.exists()) {
-            tempFile.delete();
-        }
+        // }
     }
 
     /**
