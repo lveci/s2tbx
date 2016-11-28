@@ -20,5 +20,16 @@ public class JP2Format {
     public static final String _nativeStreamMetadataFormatName =
             "javax_imageio_jpeg_stream_1.0";
     public static final String   _nativeImageMetadataFormatClassName =
-            "org.esa.s2tbx.imagewriter.JP2MetadataFormat";
+            "org.esa.s2tbx.imagewriter.JP2ImageMetadataFormat";
+    public static final String   _nativeStreamMetadataFormatClassName  =
+            "org.esa.s2tbx.imagewriter.JP2StreamMetadataFormat";
+    public static final boolean  _supportsStandardStreamMetadataFormat = true;
+    public static final String[] _extraStreamMetadataFormatNames       = null;
+    public static final String[] _extraStreamMetadataFormatClassNames  = null;
+    public static final boolean  _supportsStandardImageMetadataFormat = true;
+    public static final String[] _extraImageMetadataFormatNames       = null;
+    public static final String[] _extraImageMetadataFormatClassNames  = null;
+    public static final String   _writerClassName = "org.esa.s2tbx.imagewriter.ImageWriterPlugin";
+    public static final String[] _readerSpiNames = null;
+
 }

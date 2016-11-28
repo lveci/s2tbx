@@ -4,8 +4,12 @@ import org.esa.s2tbx.dataio.jp2.Box;
 import org.esa.s2tbx.dataio.jp2.BoxReader;
 import org.esa.s2tbx.dataio.jp2.BoxType;
 import org.esa.s2tbx.dataio.openjp2.OpenJP2Encoder;
+import org.w3c.dom.Node;
+
 import javax.imageio.*;
+import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.FileImageInputStream;
 import javax.xml.stream.*;
@@ -28,9 +32,11 @@ public class ImageWriterPlugin extends ImageWriter {
     private IIOImage sourceImage;
     private RenderedImage renderedImage;
     private int numbResolution = DEFAULT_NUMBER_OF_RESOLUTIONS;
-    private IIOMetadata metadata;
+    private IIOMetadata imageMetadata;
     private BoxReader boxReader;
     private int headerSize;
+    private JP2Metadata createdStreamMetadata;
+    private JP2Metadata createdImageMetadata;
     /**
      *
      */
@@ -68,29 +74,59 @@ public class ImageWriterPlugin extends ImageWriter {
 
     @Override
     public IIOMetadata getDefaultStreamMetadata(ImageWriteParam param) {
-        //return new JP2MetadataFormat();
+        //return new JP2Metadata(param, this);
         return null;
     }
 
     @Override
     public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
+
+        //return new JP2Metadata(imageType, param,this);
         return null;
     }
 
     @Override
     public IIOMetadata convertStreamMetadata(IIOMetadata inData, ImageWriteParam param) {
-       /* if (inData instanceof JP2MetadataFormat) {
-            return inData;
-        } else {
-            return null;
+
+        /*if (inData instanceof JP2Metadata) {
+            JP2Metadata jpegData = (JP2Metadata) inData;
+            if (jpegData.isStream) {
+                return inData;
+            }
         }*/
+
         return null;
     }
 
     @Override
     public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
+       /* if (inData instanceof JP2Metadata) {
+            JP2Metadata jpegData = (JP2Metadata) inData;
+            if (!jpegData.isStream) {
+                return inData;
+            } else {
+                return null;
+            }
+        }
+        if (inData.isStandardMetadataFormatSupported()) {
+            String formatName =
+                    IIOMetadataFormatImpl.standardMetadataFormatName;
+            Node tree = inData.getAsTree(formatName);
+            if (tree != null) {
+                JP2Metadata jpegData = new JP2Metadata(imageType,
+                        param,
+                        this);
+                try {
+                    jpegData.setFromTree(formatName, tree);
+                } catch (IIOInvalidTreeException e) {
+                    return null;
+                }
+                return jpegData;
+            }
+        }*/
         return null;
-    }
+
+}
 
     /**
      * Appends a complete image stream containing a single image and
@@ -135,10 +171,16 @@ public class ImageWriterPlugin extends ImageWriter {
             }
         }
         if (streamMetadata != null) {
-            this.metadata = streamMetadata;
+            this.createdStreamMetadata = (JP2Metadata)convertStreamMetadata(streamMetadata, null);
         }
+
         this.sourceImage = image;
         this.renderedImage = sourceImage.getRenderedImage();
+        this.imageMetadata = image.getMetadata();
+        if (imageMetadata != null) {
+            ImageTypeSpecifier type = ImageTypeSpecifier.createFromRenderedImage(renderedImage);
+            createdImageMetadata = (JP2Metadata)convertImageMetadata(imageMetadata, type, null);
+        }
         try (OpenJP2Encoder jp2Encoder = new OpenJP2Encoder(renderedImage)) {
             Path outputStreamPath = FileSystems.getDefault().getPath(this.fileOutput.getPath());
             jp2Encoder.write(outputStreamPath, getNumberResolutions());
@@ -146,7 +188,7 @@ public class ImageWriterPlugin extends ImageWriter {
             logger.warning(e.getMessage());
         }
 
-        //  if(this.metadata!=null) {
+        //  if(this.createdStreamMetadata!=null||this.createdImageMetadata!=null) {
         this.headerSize= computeHeaderSize();
         if (fileOutput.exists()) {
             try (RandomAccessFile file = new RandomAccessFile(this.fileOutput, "rws")) {
@@ -161,7 +203,13 @@ public class ImageWriterPlugin extends ImageWriter {
                 file.write(headerStream, 0, headerSize);
                 File tempXMLFile = File.createTempFile(this.fileOutput.getName(), ".xml");
                 try (FileOutputStream fop = new FileOutputStream(tempXMLFile, true)) {
-                    new JP2XmlGenerator(fop, this.renderedImage, this.metadata, "urn:ogc:def:crs:EPSG::32629");
+                    //TODO
+                    /*if(this.createdStreamMetadata!=null) {
+                        new JP2XmlGenerator(fop, this.renderedImage, this.createdStreamMetadata, "urn:ogc:def:crs:EPSG::32629");
+                    }else if(this.createdImageMetadata!=null){
+                        new JP2XmlGenerator(fop, this.renderedImage, this.createdImageMetadata, "urn:ogc:def:crs:EPSG::32629");
+                    }*/
+                    new JP2XmlGenerator(fop, this.renderedImage, this.createdImageMetadata, "urn:ogc:def:crs:EPSG::32629");
                 } catch (XMLStreamException e) {
                     logger.warning(e.getMessage());
                 }
