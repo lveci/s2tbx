@@ -27,13 +27,13 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
         addElement("FeatureMember", "FeatureCollection", CHILD_POLICY_CHOICE);
 
-        addElement("RectifiedGridCoverage", "FeatureMember", 2,2);
+        addElement("RectifiedGridCoverage", "FeatureMember", CHILD_POLICY_SEQUENCE);
 
         addElement("rangeSet", "RectifiedGridCoverage", CHILD_POLICY_CHOICE);
 
         addElement("rectifiedGridDomain", "RectifiedGridCoverage", CHILD_POLICY_CHOICE);
 
-        addElement("File", "rangeSet", 2,2);
+        addElement("File", "rangeSet",CHILD_POLICY_SEQUENCE);
 
         addElement("fileName", "File",CHILD_POLICY_EMPTY);
 
@@ -43,23 +43,23 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
         addAttribute("fileStructure", "fileStructureType",DATATYPE_STRING,true, "Record Interleaved" );
 
-        addElement("RectifiedGrid", "rectifiedGridDomain", 2,2);
+        addElement("RectifiedGrid", "rectifiedGridDomain", CHILD_POLICY_SEQUENCE);
 
         addElement("offsetVector", "RectifiedGrid", CHILD_POLICY_EMPTY);
 
-        addAttribute("offsetVector", "offsetValue", DATATYPE_INTEGER, true, 0, Integer.MAX_VALUE);
+        addAttribute("offsetVector", "offsetValue", DATATYPE_INTEGER, true, null);
 
         addElement("origin", "RectifiedGrid", CHILD_POLICY_CHOICE);
 
         addElement("Point", "origin", CHILD_POLICY_CHOICE);
 
-        addAttribute("Point", "mglId", DATATYPE_STRING, true,"P0001");
+        addAttribute("Point", "gmlId", DATATYPE_STRING, true,null);
 
         addElement("pos", "Point", CHILD_POLICY_EMPTY);
 
-        addAttribute("pos", "latCoordinate", DATATYPE_INTEGER, true, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        addAttribute("pos", "latCoordinate", DATATYPE_INTEGER, true, null);
 
-        addAttribute("pos", "longCoordinate", DATATYPE_INTEGER, true, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        addAttribute("pos", "longCoordinate", DATATYPE_INTEGER, true, null);
 
     }
 

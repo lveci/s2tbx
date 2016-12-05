@@ -5,5 +5,15 @@ package org.esa.s2tbx.imagewriter;
  */
 public class JP2MetadataResources {
 
+    private String fileStructureType;
+    private String fileName;
+
+    public void addFileStructureType(String fileStructureType){
+        this.fileStructureType = fileStructureType;
+    }
+
+    public void addFileName(String fileName){
+        this.fileName = fileName;
+    }
 
 }

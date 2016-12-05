@@ -2,12 +2,14 @@ package org.esa.s2tbx.imagewriter;
 
 
 
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.metadata.IIOMetadataNode;
 
 
@@ -51,6 +53,7 @@ public class JP2Metadata extends IIOMetadata{
         this(true);
     }
 
+
     @Override
     public boolean isReadOnly() {
         return false;
@@ -77,7 +80,10 @@ public class JP2Metadata extends IIOMetadata{
     IIOMetadataNode getNativeTree(){
         IIOMetadataNode root = null;
         IIOMetadataNode top;
-        //TODO
+        root = new IIOMetadataNode(JP2Format._nativeStreamMetadataFormatName);
+        top = root;
+
+
         return root;
     }
 
@@ -102,19 +108,83 @@ public class JP2Metadata extends IIOMetadata{
             throw new IIOInvalidTreeException("Invalid root node name: " + name,
                     root);
         }
-        //TODO
-        mergeSequenceSubtree(root.getFirstChild());
+        if (root.getChildNodes().getLength() != 1) { // JP2Medatada
+            throw new IIOInvalidTreeException(
+                    "JP2Medatada node must be present", root);
+        }
+        Node node = root;
+        while (node != null) {
+            if(node.getNodeName().equals("RectifiedGridCoverage")){
+                mergeSequenceSubtree(root.getFirstChild());
+            }
+            node = node.getNextSibling();
+        }
+
 
     }
+
 
     private void mergeSequenceSubtree(Node sequenceTree) throws IIOInvalidTreeException {
         NodeList children = sequenceTree.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node node = children.item(i);
             String name = node.getNodeName();
-            //TODO
+            if (name.equals("rangeSet")) {
+                mergeRangeSetNode(node.getFirstChild());
+            }else if (name.equals("rectifiedGridDomain")) {
+                mergeRectifiedGridDomainNode(node.getFirstChild());
+            }else {
+                throw new IIOInvalidTreeException("Invalid node: " + name, node);
+            }
         }
     }
+
+    private void mergeRangeSetNode(Node node) throws IIOInvalidTreeException {
+        NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node localNode = children.item(i);
+            String name = node.getNodeName();
+            if (name.equals("fileName")) {
+                mergeFileNameNode(localNode, true);
+            }else if (name.equals("fileStructure")) {
+                mergeFileStructureNode(localNode, true);
+            }else {
+                throw new IIOInvalidTreeException("Invalid node: " + name, localNode);
+            }
+        }
+    }
+
+    private void mergeFileNameNode(Node node, boolean required)throws IIOInvalidTreeException {
+
+        NamedNodeMap attributes = node.getAttributes();
+        String valueFileNameString = attributes.getNamedItem("stringFileName").getNodeValue();
+        if (valueFileNameString == null) {
+            if (required) {
+                throw new IIOInvalidTreeException
+                        ("stringFileName" + " attribute not found", node);
+            }
+        }else{
+            jp2resources.addFileName(valueFileNameString);
+        }
+    }
+
+    private void mergeFileStructureNode(Node node, boolean required)throws IIOInvalidTreeException {
+        NamedNodeMap attributes = node.getAttributes();
+        String valuefileStructureTypeString = attributes.getNamedItem("fileStructureType").getNodeValue();
+        if (valuefileStructureTypeString == null) {
+            if (required) {
+                throw new IIOInvalidTreeException
+                        ("stringFileName" + " attribute not found", node);
+            }
+        }else{
+            jp2resources.addFileStructureType(valuefileStructureTypeString);
+        }
+    }
+
+    private void mergeRectifiedGridDomainNode(Node node) {
+
+    }
+
 
     @Override
     public void reset() {
@@ -122,4 +192,5 @@ public class JP2Metadata extends IIOMetadata{
         this.jp2resources = new JP2MetadataResources();
 
     }
+
 }
