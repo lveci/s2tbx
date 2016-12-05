@@ -12,8 +12,15 @@ public class JP2MetadataResources {
         this.fileStructureType = fileStructureType;
     }
 
+    public String getFileStructureType(){
+        return this.fileStructureType;
+    }
+
     public void addFileName(String fileName){
         this.fileName = fileName;
     }
 
+    public String getFileName(){
+        return this.fileName;
+    }
 }

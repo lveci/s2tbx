@@ -9,7 +9,6 @@ import org.w3c.dom.NodeList;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.metadata.IIOMetadataNode;
 
 
@@ -83,7 +82,7 @@ public class JP2Metadata extends IIOMetadata{
         root = new IIOMetadataNode(JP2Format._nativeStreamMetadataFormatName);
         top = root;
 
-
+       //TODO
         return root;
     }
 
@@ -181,8 +180,27 @@ public class JP2Metadata extends IIOMetadata{
         }
     }
 
-    private void mergeRectifiedGridDomainNode(Node node) {
+    private void mergeRectifiedGridDomainNode(Node node) throws IIOInvalidTreeException {
+        NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node localNode = children.item(i);
+            String name = node.getNodeName();
+            if (name.equals("origin")) {
+                mergeOriginNode(localNode);
+            }else if (name.equals("offsetVector")) {
+                mergeoffsetVectoreNode(localNode, true);
+            }else {
+                throw new IIOInvalidTreeException("Invalid node: " + name, localNode);
+            }
+        }
+    }
 
+    private void mergeoffsetVectoreNode(Node localNode, boolean b) {
+        //TODO
+    }
+
+    private void mergeOriginNode(Node localNode) {
+        //TODO
     }
 
 
