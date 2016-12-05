@@ -20,12 +20,12 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
 
     public JP2ImageWriterSpi() {
         super(JP2Format._vendor,JP2Format._version,JP2Format._names, JP2Format._suffixes, JP2Format._MIMEtypes,
-                JP2Format. _writerClassName,  new Class[] { File.class }, JP2Format._readerSpiNames,
-                JP2Format. _supportsStandardStreamMetadataFormat, JP2Format._nativeStreamMetadataFormatName,
+                JP2Format._writerClassName,  new Class[] { File.class }, JP2Format._readerSpiNames,
+                JP2Format._supportsStandardStreamMetadataFormat, JP2Format._nativeStreamMetadataFormatName,
                 JP2Format._nativeStreamMetadataFormatClassName, JP2Format._extraStreamMetadataFormatNames,
                 JP2Format._extraStreamMetadataFormatClassNames, JP2Format._supportsStandardImageMetadataFormat,
                 JP2Format._nativeImageMetadataFormatName, JP2Format._nativeImageMetadataFormatClassName,
-                JP2Format._extraImageMetadataFormatNames, JP2Format. _extraImageMetadataFormatClassNames);
+                JP2Format._extraImageMetadataFormatNames, JP2Format._extraImageMetadataFormatClassNames);
     }
 
     /**
@@ -35,7 +35,7 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
      */
     @Override
     public String getDescription(Locale locale) {
-        return "Standard JPEG2000 Image Writer";
+        return "Sentinel 2 Toolbox JPEG2000 Image Writer";
     }
 
     /**
@@ -49,6 +49,7 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
              logger.warning("Wrong number of bands");
              return false;
          }
+
         SampleModel sampleModel = type.getSampleModel();
         // Find the maximum bit depth across all channels
         int[] sampleSize = sampleModel.getSampleSize();
@@ -58,7 +59,7 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
                 bitDepth = sampleSize[i];
             }
         }
-        // Ensure bitDepth is between 1 and 8
+        // Ensure bitDepth is between 1 and 16
         if (bitDepth < 1 || bitDepth > 16) {
             logger.warning("wrong bitDepth for input image");
             return false;

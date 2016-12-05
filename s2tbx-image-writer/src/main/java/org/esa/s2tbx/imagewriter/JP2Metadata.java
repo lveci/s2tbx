@@ -1,20 +1,22 @@
 package org.esa.s2tbx.imagewriter;
 
-import com.sun.media.jfxmedia.logging.Logger;
+
+
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+
 
 /**
  * Created by rdumitrascu on 11/25/2016.
  */
 public class JP2Metadata extends IIOMetadata{
 
+    public JP2MetadataResources jp2resources = new JP2MetadataResources();
     /**
      * Indicates whether this object represents stream or image
      * metadata.  Package-visible so the writer can see it.
@@ -47,24 +49,6 @@ public class JP2Metadata extends IIOMetadata{
      */
     JP2Metadata(ImageWriteParam param, ImageWriterPlugin writer) {
         this(true);
-
-        //TODO
-    }
-
-    /**
-     *
-     * Constructs a default image <code>JP2Metadata</code> object appropriate
-     * for the given image type and write parameters.
-     * @param imageType
-     * @param param
-     * @param writer
-     */
-    JP2Metadata(ImageTypeSpecifier imageType,
-                ImageWriteParam param,
-                ImageWriterPlugin writer) {
-        this(false);
-
-        //TODO
     }
 
     @Override
@@ -74,9 +58,27 @@ public class JP2Metadata extends IIOMetadata{
 
     @Override
     public Node getAsTree(String formatName) {
-        return null;
-
+        if (formatName == null) {
+            throw new IllegalArgumentException("null formatName!");
+        }
+        if (formatName.equals(JP2Format._nativeStreamMetadataFormatName)) {
+            return getNativeTree();
+        }
+        throw new IllegalArgumentException("Unsupported format name: "
+                + formatName);
         //TODO
+
+    }
+
+    /**
+     *
+     * @return
+     */
+    IIOMetadataNode getNativeTree(){
+        IIOMetadataNode root = null;
+        IIOMetadataNode top;
+        //TODO
+        return root;
     }
 
     @Override
@@ -87,16 +89,8 @@ public class JP2Metadata extends IIOMetadata{
         if (root == null) {
             throw new IllegalArgumentException("null root!");
         }
-        if (isStream &&
-                (formatName.equals(JP2Format._nativeStreamMetadataFormatName))) {
+        if( (formatName.equals(JP2Format._nativeStreamMetadataFormatName))) {
             mergeNativeTree(root);
-        } else if (!isStream &&
-                (formatName.equals(JP2Format._nativeImageMetadataFormatName))) {
-            mergeNativeTree(root);
-        } else if (!isStream &&
-                (formatName.equals
-                        (IIOMetadataFormatImpl.standardMetadataFormatName))) {
-            mergeStandardTree(root);
         } else {
             throw  new IllegalArgumentException("Unsupported format name: "
                     + formatName);
@@ -104,8 +98,7 @@ public class JP2Metadata extends IIOMetadata{
     }
     private void mergeNativeTree(Node root) throws IIOInvalidTreeException {
         String name = root.getNodeName();
-        if (name != ((isStream) ? JP2Format._nativeStreamMetadataFormatName
-                : JP2Format._nativeImageMetadataFormatName)) {
+        if (name !=  JP2Format._nativeStreamMetadataFormatName) {
             throw new IIOInvalidTreeException("Invalid root node name: " + name,
                     root);
         }
@@ -121,22 +114,12 @@ public class JP2Metadata extends IIOMetadata{
             String name = node.getNodeName();
             //TODO
         }
-        }
-
-    private void mergeStandardTree(Node root) throws IIOInvalidTreeException {
-        NodeList children = root.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            Node node = children.item(i);
-            String name = node.getNodeName();
-        }
-
-        //TODO
     }
+
     @Override
     public void reset() {
 
-        //TODO
-
+        this.jp2resources = new JP2MetadataResources();
 
     }
 }
