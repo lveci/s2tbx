@@ -12,16 +12,23 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
     private static JP2MetadataFormat theInstance = null;
 
+    /**
+     *
+     * @param formatName
+     * @param childPolicy
+     */
     JP2MetadataFormat(String formatName, int childPolicy) {
         super(formatName, childPolicy);
 
-        addElement("JP2Medatada", JP2Format._nativeStreamMetadataFormatName, CHILD_POLICY_CHOICE);
-
-        addStreamElements("JP2Medatada");
-
     }
 
+    /**
+     *
+     * @param parentName
+     */
     void addStreamElements(String parentName) {
+
+        addElement("JP2Medatada", JP2Format._nativeStreamMetadataFormatName, CHILD_POLICY_CHOICE);
 
         addElement("FeatureCollection", parentName, CHILD_POLICY_CHOICE);
 
@@ -47,13 +54,13 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
         addElement("offsetVector", "RectifiedGrid", CHILD_POLICY_EMPTY);
 
-        addAttribute("offsetVector", "offsetValue", DATATYPE_INTEGER, true, null);
+        addAttribute("offsetVector", "offsetValueX", DATATYPE_INTEGER, true, 0, Integer.MAX_VALUE);
+
+        addAttribute("offsetVector", "offsetValueY", DATATYPE_INTEGER, true, 0, Integer.MAX_VALUE);
 
         addElement("origin", "RectifiedGrid", CHILD_POLICY_CHOICE);
 
         addElement("Point", "origin", CHILD_POLICY_CHOICE);
-
-        addAttribute("Point", "gmlId", DATATYPE_STRING, true,null);
 
         addElement("pos", "Point", CHILD_POLICY_EMPTY);
 
@@ -99,5 +106,4 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
         }
         return false;
     }
-
 }

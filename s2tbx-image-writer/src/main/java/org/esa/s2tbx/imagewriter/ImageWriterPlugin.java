@@ -95,8 +95,16 @@ public class ImageWriterPlugin extends ImageWriter {
     public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
         return null;
 
-}
+    }
 
+    /**
+     * Tiling, progressive encoding, compression are disabled by default
+     * @return
+     */
+    @Override
+    public ImageWriteParam getDefaultWriteParam() {
+        return new ImageWriteParam(getLocale());
+    }
     /**
      * Appends a complete image stream containing a single image and
      * associated stream and image metadata and thumbnails to the
@@ -153,46 +161,46 @@ public class ImageWriterPlugin extends ImageWriter {
             logger.warning(e.getMessage());
         }
 
-        //  if(this.createdStreamMetadata!=null) {
-        this.headerSize= computeHeaderSize();
-        if (fileOutput.exists()) {
-            try (RandomAccessFile file = new RandomAccessFile(this.fileOutput, "rws")) {
-                int fileLenght = (int) file.length();
-                byte[] headerStream = new byte[headerSize];
-                file.read(headerStream, 0, headerSize);
-                file.seek(0);
-                byte[] ccStream = new byte[(int) file.length()-headerSize];
-                file.seek(headerSize);
-                file.read(ccStream, 0, fileLenght - headerSize);
-                file.setLength(0);
-                file.write(headerStream, 0, headerSize);
-                File tempXMLFile = File.createTempFile(this.fileOutput.getName(), ".xml");
-                try (FileOutputStream fop = new FileOutputStream(tempXMLFile, true)) {
-                    //TODO
-                    new JP2XmlGenerator(fop, this.renderedImage, this.createdStreamMetadata, "urn:ogc:def:crs:EPSG::32629");
-                } catch (XMLStreamException e) {
-                    logger.warning(e.getMessage());
-                }
-                try (RandomAccessFile temporatyFile = new RandomAccessFile(tempXMLFile, "rws")) {
-                    byte[] xmlStream = new byte[(int) temporatyFile.length()];
-                    temporatyFile.read(xmlStream, 0, (int) temporatyFile.length());
-                    file.writeInt(8 + xmlStream.length);
-                    file.writeInt(XML_BOX_HEADER_TYPE);
-                    file.write(xmlStream);
+        if(this.createdStreamMetadata!=null) {
+            this.headerSize= computeHeaderSize();
+            if (fileOutput.exists()) {
+                try (RandomAccessFile file = new RandomAccessFile(this.fileOutput, "rws")) {
+                    int fileLenght = (int) file.length();
+                    byte[] headerStream = new byte[headerSize];
+                    file.read(headerStream, 0, headerSize);
+                    file.seek(0);
+                    byte[] ccStream = new byte[(int) file.length()-headerSize];
+                    file.seek(headerSize);
+                    file.read(ccStream, 0, fileLenght - headerSize);
+                    file.setLength(0);
+                    file.write(headerStream, 0, headerSize);
+                    File tempXMLFile = File.createTempFile(this.fileOutput.getName(), ".xml");
+                    try (FileOutputStream fop = new FileOutputStream(tempXMLFile, true)) {
+                        //TODO
+                        new JP2XmlGenerator(fop, this.renderedImage, this.createdStreamMetadata.jp2resources, "urn:ogc:def:crs:EPSG::32629");
+                    } catch (XMLStreamException e) {
+                        logger.warning(e.getMessage());
+                    }
+                    try (RandomAccessFile temporatyFile = new RandomAccessFile(tempXMLFile, "rws")) {
+                        byte[] xmlStream = new byte[(int) temporatyFile.length()];
+                        temporatyFile.read(xmlStream, 0, (int) temporatyFile.length());
+                        file.writeInt(8 + xmlStream.length);
+                        file.writeInt(XML_BOX_HEADER_TYPE);
+                        file.write(xmlStream);
+                    } catch (IOException e) {
+                        logger.warning(e.getMessage());
+                    }
+                    file.write(ccStream);
+                    if(tempXMLFile.exists()){
+                        tempXMLFile.delete();
+                    }
                 } catch (IOException e) {
                     logger.warning(e.getMessage());
+                } catch (Exception e) {
+                    logger.warning(e.getMessage());
                 }
-                file.write(ccStream);
-                if(tempXMLFile.exists()){
-                    tempXMLFile.delete();
-                }
-            } catch (IOException e) {
-                logger.warning(e.getMessage());
-            } catch (Exception e) {
-                logger.warning(e.getMessage());
             }
         }
-        // }
     }
 
     /**

@@ -1,6 +1,5 @@
 package org.esa.s2tbx.imagewriter;
 
-import javax.imageio.metadata.IIOMetadata;
 import javax.xml.stream.*;
 import java.awt.image.RenderedImage;
 import java.io.FileOutputStream;
@@ -13,21 +12,20 @@ import java.util.logging.Logger;
  */
 public class JP2XmlGenerator {
     private final FileOutputStream fileOutputStream;
-    private final IIOMetadata imgMetadata;
+    private final JP2MetadataResources jp2MetadataResources;
     private final RenderedImage renderedImage;
     private String srsName;
     private final static Logger logger = Logger.getLogger(JP2ImageWriterSpi.class.getName());
-    private int depth=0;
 
     /**
      *
      * @param fileOutputStream
      * @param img
-     * @param metadata
+     * @param jp2Metadata
      * @param srsName
      * @throws XMLStreamException
      */
-    public  JP2XmlGenerator(FileOutputStream fileOutputStream, RenderedImage img, IIOMetadata metadata,String srsName )throws XMLStreamException{
+    public  JP2XmlGenerator(FileOutputStream fileOutputStream, RenderedImage img, JP2MetadataResources jp2Metadata,String srsName )throws XMLStreamException{
         if(fileOutputStream == null){
             logger.warning("no fileOutputStream has been set");
             throw new IllegalArgumentException();
@@ -36,12 +34,13 @@ public class JP2XmlGenerator {
             logger.warning("no img has been received");
             throw new IllegalArgumentException();
         }
-       /* if(metadata == null){
-            logger.warning("no metadata has been received");
+        if(jp2Metadata == null){
+            logger.warning("no jp2MetadataRespurces has been received");
             throw new IllegalArgumentException();
-        }*/
+        }
+
         this.fileOutputStream = fileOutputStream;
-        this.imgMetadata = metadata;
+        this.jp2MetadataResources = jp2Metadata;
         this.renderedImage = img;
         this.srsName = srsName;
         xmlJP2WriteStream(fileOutputStream);
@@ -100,18 +99,18 @@ public class JP2XmlGenerator {
      */
     private void writeRectifiedGrid(XMLStreamWriter tmpWriter) throws XMLStreamException{
         tmpWriter.writeStartElement("gml:RectifiedGridCoverage");
-        tmpWriter.writeAttribute("dimension","2"); //TODO
-        tmpWriter.writeAttribute("gml:id","RGC0001"); //TODO
+        tmpWriter.writeAttribute("dimension","2");
+        tmpWriter.writeAttribute("gml:id","RGC0001");
         tmpWriter.writeStartElement("gml:rectifiedGridDomain");
         tmpWriter.writeStartElement("gml:RectifiedGrid");
-        tmpWriter.writeAttribute("dimension","2"); //TODO
+        tmpWriter.writeAttribute("dimension","2");
         tmpWriter.writeStartElement("gml:limits");
         writeGridEnvelope(tmpWriter);
         writeAxis(tmpWriter, "x");
         writeAxis(tmpWriter, "y");
         writeOrigin(tmpWriter);
-        writeOffsetVector(tmpWriter, 60, 0);//TODO
-        writeOffsetVector(tmpWriter, 0, -60);//TODO
+        writeOffsetVector(tmpWriter, this.jp2MetadataResources.getStepX(), 0);
+        writeOffsetVector(tmpWriter, 0, -this.jp2MetadataResources.getStepY());
         writeEndElement(2,tmpWriter);
         writeRangeSet(tmpWriter);
 
@@ -122,12 +121,12 @@ public class JP2XmlGenerator {
      * @param tmpWriter
      * @throws XMLStreamException
      */
-   private void  writeGridEnvelope(XMLStreamWriter tmpWriter)throws XMLStreamException{
-       tmpWriter.writeStartElement("gml:GridEnvelope");
-       writeImageLimits(tmpWriter, 1, 1, "low");
-       writeImageLimits(tmpWriter, this.renderedImage.getWidth(), this.renderedImage.getHeight(), "high");
-       writeEndElement(2,tmpWriter);
-   }
+    private void  writeGridEnvelope(XMLStreamWriter tmpWriter)throws XMLStreamException{
+        tmpWriter.writeStartElement("gml:GridEnvelope");
+        writeImageLimits(tmpWriter, 1, 1, "low");
+        writeImageLimits(tmpWriter, this.renderedImage.getWidth(), this.renderedImage.getHeight(), "high");
+        writeEndElement(2,tmpWriter);
+    }
 
     /**
      *
@@ -152,10 +151,10 @@ public class JP2XmlGenerator {
         tmpWriter.writeStartElement("gml:rangeSet");
         tmpWriter.writeStartElement("gml:File");
         tmpWriter.writeStartElement("gml:fileName");
-        tmpWriter.writeCharacters("gmljp2://codestream/0"); //TODO
+        tmpWriter.writeCharacters(this.jp2MetadataResources.getFileName());
         tmpWriter.writeEndElement();
         tmpWriter.writeStartElement("gml:fileStructure");
-        tmpWriter.writeCharacters("Record Interleaved"); //TODO
+        tmpWriter.writeCharacters(this.jp2MetadataResources.getFileStructureType());
         writeEndElement(3,tmpWriter);
     }
 
@@ -167,10 +166,10 @@ public class JP2XmlGenerator {
     private void writeOrigin(XMLStreamWriter tmpWriter) throws XMLStreamException{
         tmpWriter.writeStartElement("gml:origin");
         tmpWriter.writeStartElement("gml:Point");
-        tmpWriter.writeAttribute("gml:id","P0001"); //TODO
-        tmpWriter.writeAttribute("srsName",srsName); //TODO
+        tmpWriter.writeAttribute("gml:id","P0001");
+        tmpWriter.writeAttribute("srsName",srsName);
         tmpWriter.writeStartElement("gml:pos");
-        tmpWriter.writeCharacters("500010 3800010"); //TODO
+        tmpWriter.writeCharacters(this.jp2MetadataResources.getPoint().getX() + " " + this.jp2MetadataResources.getPoint().getY());
         writeEndElement(3,tmpWriter);
     }
 
@@ -183,8 +182,8 @@ public class JP2XmlGenerator {
      */
     private void writeOffsetVector(XMLStreamWriter tmpWriter, int Off1, int Off2 ) throws XMLStreamException{
         tmpWriter.writeStartElement("gml:offsetVector");
-        tmpWriter.writeAttribute("srsName",srsName); //TODO
-        tmpWriter.writeCharacters(Off1 + " " + Off2); //TODO
+        tmpWriter.writeAttribute("srsName",srsName);
+        tmpWriter.writeCharacters(Off1 + " " + Off2);
         tmpWriter.writeEndElement();
     }
 
