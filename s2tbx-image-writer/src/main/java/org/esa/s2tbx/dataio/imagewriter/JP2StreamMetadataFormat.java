@@ -1,4 +1,4 @@
-package org.esa.s2tbx.imagewriter;
+package org.esa.s2tbx.dataio.imagewriter;
 
 import javax.imageio.metadata.IIOMetadataFormat;
 
@@ -10,7 +10,7 @@ public class JP2StreamMetadataFormat extends JP2MetadataFormat {
     private static JP2StreamMetadataFormat theInstance = null;
 
     private JP2StreamMetadataFormat() {
-        super(JP2Format._nativeStreamMetadataFormatName,
+        super(JP2FormatConstants._nativeStreamMetadataFormatName,
                 CHILD_POLICY_SEQUENCE);
         addStreamElements(getRootName());
     }

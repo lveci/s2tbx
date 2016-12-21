@@ -1,10 +1,9 @@
-package org.esa.s2tbx.imagewriter;
+package org.esa.s2tbx.dataio.imagewriter;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
-import java.awt.image.BufferedImage;
 import java.awt.image.SampleModel;
 import java.io.File;
 import java.util.Locale;
@@ -19,20 +18,15 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
     private static final Logger logger = Logger.getLogger(JP2ImageWriterSpi.class.getName());
 
     public JP2ImageWriterSpi() {
-        super(JP2Format._vendor,JP2Format._version,JP2Format._names, JP2Format._suffixes, JP2Format._MIMEtypes,
-                JP2Format._writerClassName,  new Class[] { File.class }, JP2Format._readerSpiNames,
-                JP2Format._supportsStandardStreamMetadataFormat, JP2Format._nativeStreamMetadataFormatName,
-                JP2Format._nativeStreamMetadataFormatClassName, JP2Format._extraStreamMetadataFormatNames,
-                JP2Format._extraStreamMetadataFormatClassNames, JP2Format._supportsStandardImageMetadataFormat,
-                JP2Format._nativeImageMetadataFormatName, JP2Format._nativeImageMetadataFormatClassName,
-                JP2Format._extraImageMetadataFormatNames, JP2Format._extraImageMetadataFormatClassNames);
+        super(JP2FormatConstants._vendor, JP2FormatConstants._version, JP2FormatConstants._names, JP2FormatConstants._suffixes, JP2FormatConstants._MIMEtypes,
+                JP2FormatConstants._writerClassName,  new Class[] { File.class }, JP2FormatConstants._readerSpiNames,
+                JP2FormatConstants._supportsStandardStreamMetadataFormat, JP2FormatConstants._nativeStreamMetadataFormatName,
+                JP2FormatConstants._nativeStreamMetadataFormatClassName, JP2FormatConstants._extraStreamMetadataFormatNames,
+                JP2FormatConstants._extraStreamMetadataFormatClassNames, JP2FormatConstants._supportsStandardImageMetadataFormat,
+                JP2FormatConstants._nativeImageMetadataFormatName, JP2FormatConstants._nativeImageMetadataFormatClassName,
+                JP2FormatConstants._extraImageMetadataFormatNames, JP2FormatConstants._extraImageMetadataFormatClassNames);
     }
 
-    /**
-     *
-     * @param locale
-     * @return
-     */
     @Override
     public String getDescription(Locale locale) {
         return "Sentinel 2 Toolbox JPEG2000 Image Writer";
@@ -67,15 +61,9 @@ public class JP2ImageWriterSpi extends ImageWriterSpi {
         return true;
     }
 
-    /**
-     *
-     * @param extension
-     * @return returns a new instance of ImageWriterPlugin
-     * @throws IIOException
-     */
     @Override
     public ImageWriter createWriterInstance(Object extension) throws IIOException {
-        return new ImageWriterPlugin(this);
+        return new JP2ImageWriter();
     }
 
 }

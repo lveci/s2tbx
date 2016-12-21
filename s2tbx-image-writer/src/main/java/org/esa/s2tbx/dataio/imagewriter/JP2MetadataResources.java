@@ -1,6 +1,13 @@
-package org.esa.s2tbx.imagewriter;
+package org.esa.s2tbx.dataio.imagewriter;
 
+import javax.imageio.metadata.IIOMetadata;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
 import java.awt.geom.Point2D;
+import java.awt.image.RenderedImage;
+import java.io.FileOutputStream;
+import java.io.StringWriter;
 
 /**
  * Class containing all the resources needed for the JP2metadata
@@ -10,11 +17,14 @@ import java.awt.geom.Point2D;
 public class JP2MetadataResources {
 
 
-    private String fileStructureType;
-    private String fileName;
+    private String fileStructureType = "Record Interleaved";
+    private String fileName = "gmljp2://codestream/0";
     private int stepX;
     private int stepY;
-    private Point2D.Double origin =null;
+    private Point2D.Double origin = null;
+    private int imageWidth;
+    private int imageHeight;
+    private int epsgNumber;
 
     public JP2MetadataResources(){
 
@@ -98,5 +108,29 @@ public class JP2MetadataResources {
      */
     public String getFileName(){
         return this.fileName;
+    }
+
+    public int getImageWidth() {
+        return imageWidth;
+    }
+
+    public void setImageWidth(int imageWidth) {
+        this.imageWidth = imageWidth;
+    }
+
+    public int getImageHeight() {
+        return imageHeight;
+    }
+
+    public void setImageHeight(int imageHeight) {
+        this.imageHeight = imageHeight;
+    }
+
+    public int getEpsgNumber() {
+        return epsgNumber;
+    }
+
+    public void setEpsgNumber(int epsgNumber) {
+        this.epsgNumber = epsgNumber;
     }
 }

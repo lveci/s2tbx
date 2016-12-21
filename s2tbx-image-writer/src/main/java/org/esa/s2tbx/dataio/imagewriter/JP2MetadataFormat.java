@@ -1,6 +1,4 @@
-package org.esa.s2tbx.imagewriter;
-
-import com.sun.imageio.plugins.jpeg.JPEG;
+package org.esa.s2tbx.dataio.imagewriter;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
@@ -10,8 +8,6 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
  */
 public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
-    private static JP2MetadataFormat theInstance = null;
-
     /**
      *
      * @param formatName
@@ -19,7 +15,6 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
      */
     JP2MetadataFormat(String formatName, int childPolicy) {
         super(formatName, childPolicy);
-
     }
 
     /**
@@ -28,7 +23,7 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
      */
     void addStreamElements(String parentName) {
 
-        addElement("JP2Medatada", JP2Format._nativeStreamMetadataFormatName, CHILD_POLICY_CHOICE);
+        addElement("JP2Medatada", JP2FormatConstants._nativeStreamMetadataFormatName, CHILD_POLICY_CHOICE);
 
         addElement("FeatureCollection", parentName, CHILD_POLICY_CHOICE);
 
@@ -52,6 +47,16 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
         addElement("RectifiedGrid", "rectifiedGridDomain", CHILD_POLICY_SEQUENCE);
 
+        addElement("limits", "RectifiedGrid", CHILD_POLICY_CHOICE);
+
+        addElement("GridEnvelope", "limits", CHILD_POLICY_CHOICE);
+
+        addElement("high", "GridEnvelope", CHILD_POLICY_CHOICE);
+
+        addAttribute("high", "imageWidth", DATATYPE_INTEGER, true, null);
+
+        addAttribute("high", "imageHeight", DATATYPE_INTEGER, true, null);
+
         addElement("offsetVector", "RectifiedGrid", CHILD_POLICY_EMPTY);
 
         addAttribute("offsetVector", "offsetValueX", DATATYPE_INTEGER, true, 0, Integer.MAX_VALUE);
@@ -70,20 +75,24 @@ public class JP2MetadataFormat extends IIOMetadataFormatImpl {
 
     }
 
-    /**
-     *
-     * @param elementName
-     * @param imageType
-     * @return
-     */
-        @Override
+    @Override
     public boolean canNodeAppear(String elementName, ImageTypeSpecifier imageType) {
-         // Just check if it appears in the format
-         if (isInSubtree(elementName, getRootName())){
-             return true;
-         }
-         return false;
-     }
+        // Just check if it appears in the format
+        if (elementName.equals(getRootName())
+                || elementName.equals("JP2Medatada")
+                || elementName.equals("FeatureCollection")
+                || elementName.equals("FeatureMember")
+                || isInSubtree(elementName,"RectifiedGridCoverage" )){
+            return true;
+        }
+        if(isInSubtree(elementName,"File" )){
+            return true;
+        }
+        if(isInSubtree(elementName,"RectifiedGrid")){
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Returns <code>true</code> if the named element occurs in the

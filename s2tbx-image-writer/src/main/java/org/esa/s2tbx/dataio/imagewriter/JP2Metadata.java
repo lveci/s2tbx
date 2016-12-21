@@ -1,11 +1,15 @@
-package org.esa.s2tbx.imagewriter;
+package org.esa.s2tbx.dataio.imagewriter;
 
 
 
+import org.esa.snap.core.datamodel.*;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
@@ -31,15 +35,15 @@ public class JP2Metadata extends IIOMetadata{
 
     JP2Metadata(boolean isStream) {
         super(true,  // Supports standard format
-                JP2Format._nativeImageMetadataFormatName,  // and a native format
-                JP2Format._nativeImageMetadataFormatClassName,
+                JP2FormatConstants._nativeImageMetadataFormatName,  // and a native format
+                JP2FormatConstants._nativeImageMetadataFormatClassName,
                 null, null);  // No other formats
         // But if we are stream metadata, adjust the variables
         this.isStream = isStream;
         if (isStream) {
-            nativeMetadataFormatName = JP2Format._nativeStreamMetadataFormatName;
+            nativeMetadataFormatName = JP2FormatConstants._nativeStreamMetadataFormatName;
             nativeMetadataFormatClassName =
-                    JP2Format._nativeStreamMetadataFormatClassName;
+                    JP2FormatConstants._nativeStreamMetadataFormatClassName;
         }
     }
 
@@ -47,11 +51,17 @@ public class JP2Metadata extends IIOMetadata{
      *
      * Constructs a default stream <code>JP2Metadata</code> object appropriate
      * for the given write parameters.
-     * @param param
-     * @param writer
      */
-    JP2Metadata(ImageWriteParam param, ImageWriterPlugin writer) {
+    JP2Metadata(ImageWriteParam param, JP2ImageWriter writer) {
         this(true);
+    }
+
+    /**
+     * Constructs a default image <code>JPEGMetadata</code> object appropriate
+     * for the given image type and write parameters.
+     */
+    JP2Metadata(ImageTypeSpecifier imageType,ImageWriteParam param, JP2ImageWriter writer) {
+        this(false);
     }
 
     // Return the singleton instance
@@ -72,7 +82,7 @@ public class JP2Metadata extends IIOMetadata{
         if (formatName == null) {
             throw new IllegalArgumentException("null formatName!");
         }
-        if (formatName.equals(JP2Format._nativeStreamMetadataFormatName)) {
+        if (formatName.equals(JP2FormatConstants._nativeStreamMetadataFormatName)) {
             return getNativeTree();
         }
         throw new IllegalArgumentException("Unsupported format name: "
@@ -85,9 +95,8 @@ public class JP2Metadata extends IIOMetadata{
      */
     private IIOMetadataNode getNativeTree(){
         IIOMetadataNode root = null;
-        IIOMetadataNode top;
         JP2MetadataResources localResource = this.jp2resources;
-        root = new IIOMetadataNode(JP2Format._nativeStreamMetadataFormatName);
+        root = new IIOMetadataNode(JP2FormatConstants._nativeStreamMetadataFormatName);
         IIOMetadataNode header = new IIOMetadataNode("JP2Medatada");
         root.appendChild(header);
         appendHeaderNodes(header, localResource);
@@ -125,6 +134,24 @@ public class JP2Metadata extends IIOMetadata{
         IIOMetadataNode posNode =  new IIOMetadataNode("pos");
         appendPosNodeAttributes(posNode,localResource.getPoint());
         pointNode.appendChild(posNode);
+        IIOMetadataNode limitsNode = new IIOMetadataNode("limits");
+        rectifiedGridSequence.appendChild(limitsNode);
+        IIOMetadataNode gridEnvelopeNode = new IIOMetadataNode("GridEnvelope");
+        limitsNode.appendChild(gridEnvelopeNode);
+        IIOMetadataNode imageLimitsNode = new IIOMetadataNode("high");
+        appendImageLimitsAttributes(imageLimitsNode,localResource.getImageHeight(), localResource.getImageWidth());
+        gridEnvelopeNode.appendChild(imageLimitsNode);
+    }
+
+    /**
+     *
+     * @param imageLimitsNode
+     * @param imageHeight
+     * @param imageWidth
+     */
+    private void appendImageLimitsAttributes(IIOMetadataNode imageLimitsNode, int imageHeight, int imageWidth) {
+        imageLimitsNode.setAttribute("imageHeight", imageHeight+"");
+        imageLimitsNode.setAttribute("imageWidth", imageWidth+"");
     }
 
     /**
@@ -134,8 +161,8 @@ public class JP2Metadata extends IIOMetadata{
      * @param fileStructureType
      */
     private void appendFileNodeAttributes(IIOMetadataNode fileNode, String fileName, String fileStructureType) {
-       fileNode.setAttribute("stringFileName", fileName);
-       fileNode.setAttribute("fileStructureType", fileStructureType) ;
+        fileNode.setAttribute("stringFileName", fileName);
+        fileNode.setAttribute("fileStructureType", fileStructureType) ;
     }
 
     /**
@@ -159,12 +186,6 @@ public class JP2Metadata extends IIOMetadata{
         posNode.setAttribute("longCoordinate", point.getY()+"");
     }
 
-    /**
-     *
-     * @param formatName
-     * @param root
-     * @throws IIOInvalidTreeException
-     */
     @Override
     public void mergeTree(String formatName, Node root) throws IIOInvalidTreeException {
         if (formatName == null) {
@@ -173,7 +194,7 @@ public class JP2Metadata extends IIOMetadata{
         if (root == null) {
             throw new IllegalArgumentException("null root!");
         }
-        if( (formatName.equals(JP2Format._nativeStreamMetadataFormatName))) {
+        if( (formatName.equals(JP2FormatConstants._nativeStreamMetadataFormatName))) {
             mergeNativeTree(root);
         } else {
             throw  new IllegalArgumentException("Unsupported format name: "
@@ -188,7 +209,7 @@ public class JP2Metadata extends IIOMetadata{
      */
     private void mergeNativeTree(Node root) throws IIOInvalidTreeException {
         String name = root.getNodeName();
-        if (name !=  JP2Format._nativeStreamMetadataFormatName) {
+        if (name !=  JP2FormatConstants._nativeStreamMetadataFormatName) {
             throw new IIOInvalidTreeException("Invalid root node name: " + name,
                     root);
         }
@@ -277,7 +298,7 @@ public class JP2Metadata extends IIOMetadata{
         if (valuefileStructureTypeString == null) {
             if (required) {
                 throw new IIOInvalidTreeException
-                        ("stringFileName" + " attribute not found", node);
+                        ("fileStructureType" + " attribute not found", node);
             }
         }else{
             jp2resources.setFileStructureType(valuefileStructureTypeString);
@@ -298,9 +319,32 @@ public class JP2Metadata extends IIOMetadata{
                 mergeOriginNode(localNode.getFirstChild(), true);
             }else if (name.equals("offsetVector")) {
                 mergeoffsetVectoreNode(localNode, true);
+            }else if (name.equals("limits")) {
+                mergeLimitsNode(localNode.getFirstChild(), true);
             }else {
                 throw new IIOInvalidTreeException("Invalid node: " + name, localNode);
             }
+        }
+    }
+
+    /**
+     *
+     * @param localNode
+     * @param required
+     */
+    private void mergeLimitsNode(Node localNode, boolean required)throws IIOInvalidTreeException  {
+        Node node = localNode.getFirstChild();
+        NamedNodeMap attributes = node.getAttributes();
+        String valueImageWidthString = attributes.getNamedItem("imageWidth").getNodeValue();
+        String valueImageHeightString = attributes.getNamedItem("imageHeight").getNodeValue();
+        if ((valueImageWidthString == null)||(valueImageHeightString==null)){
+            if (required) {
+                throw new IIOInvalidTreeException
+                        ("image width, height attributes not found", node);
+            }
+        }else{
+            jp2resources.setImageHeight(Integer.parseInt(valueImageHeightString));
+            jp2resources.setImageWidth(Integer.parseInt(valueImageWidthString));
         }
     }
 
@@ -317,7 +361,7 @@ public class JP2Metadata extends IIOMetadata{
         if ((valueOffsetValueXString == null)||(valueOffsetValueYString==null)){
             if (required) {
                 throw new IIOInvalidTreeException
-                        ("stringFileName" + " attribute not found", node);
+                        ("Offset attributes not found", node);
             }
         }else{
             jp2resources.setStepX(Integer.parseInt(valueOffsetValueXString));
@@ -339,21 +383,16 @@ public class JP2Metadata extends IIOMetadata{
         if ((valueLatCoordinateString == null)||(valueLongCoordinateString==null)){
             if (required) {
                 throw new IIOInvalidTreeException
-                        ("stringFileName" + " attribute not found", node);
+                        ("point attributes not found", node);
             }
         }else{
             jp2resources.setPoint2D(valueLatCoordinateString,valueLongCoordinateString );
         }
     }
 
-    /**
-     * resets JP2MetadataResources gfor the new metadata element
-     */
+
     @Override
     public void reset() {
-
         this.jp2resources = new JP2MetadataResources();
-
     }
-
 }
