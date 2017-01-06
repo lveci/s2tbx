@@ -62,6 +62,6 @@ public class JP2ProductWriterPlugIn implements ProductWriterPlugIn {
 
     @Override
     public SnapFileFilter getProductFileFilter() {
-        return new SnapFileFilter(getFormatNames()[0], getDefaultFileExtensions()[0], JP2FormatConstants._description);
+        return new SnapFileFilter(getFormatNames()[0], getDefaultFileExtensions(), JP2FormatConstants._description);
     }
 }

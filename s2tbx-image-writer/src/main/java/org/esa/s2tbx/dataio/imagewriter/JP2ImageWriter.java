@@ -161,9 +161,9 @@ public class JP2ImageWriter extends ImageWriter {
                     try (FileOutputStream fop = new FileOutputStream(tempXMLFile, true)) {
                         XMLBoxWriter xmlWriter = new XMLBoxWriter();
                         if(this.createdStreamMetadata !=null) {
-                            xmlWriter.writeStream(fop, this.createdStreamMetadata.jp2resources);
+                            xmlWriter.setResources(fop, this.createdStreamMetadata.jp2resources);
                         }else{
-                            xmlWriter.writeStream(fop, this.createdImageMetadata.jp2resources);
+                            xmlWriter.setResources(fop, this.createdImageMetadata.jp2resources);
                         }
                     } catch (XMLStreamException e) {
                         logger.warning(e.getMessage());

@@ -2,9 +2,26 @@ package org.esa.s2tbx.dataio.imagewriter;
 
 
 
+import com.sun.javafx.collections.MappingChange;
 import org.esa.snap.core.datamodel.*;
+import org.geotools.coverage.grid.io.imageio.geotiff.GeoTiffException;
+import org.geotools.geometry.GeneralDirectPosition;
+import org.geotools.referencing.CRS;
+import org.geotools.referencing.ReferencingFactoryFinder;
+import org.geotools.referencing.factory.ReferencingFactoryContainer;
+import org.geotools.referencing.operation.DefaultCoordinateOperationFactory;
+import org.opengis.geometry.DirectPosition;
+import org.opengis.parameter.ParameterValueGroup;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.crs.GeographicCRS;
+import org.opengis.referencing.crs.ProjectedCRS;
+import org.opengis.referencing.cs.CartesianCS;
+import org.opengis.referencing.operation.CoordinateOperation;
 import org.opengis.referencing.operation.MathTransform;
+import org.opengis.referencing.operation.MathTransformFactory;
+import org.opengis.referencing.operation.TransformException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -16,6 +33,8 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.geom.Point2D;
+import java.util.Collections;
+import java.util.Locale;
 
 
 /**
@@ -30,8 +49,9 @@ public class JP2Metadata extends IIOMetadata{
      */
     final boolean isStream;
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JP2Metadata.class.getName());
+    private final double EARTH_RADIUS =  6378.137;
 
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JP2Metadata.class.getName());
 
     JP2Metadata(boolean isStream) {
         super(true,  // Supports standard format
@@ -62,6 +82,62 @@ public class JP2Metadata extends IIOMetadata{
      */
     JP2Metadata(ImageTypeSpecifier imageType,ImageWriteParam param, JP2ImageWriter writer) {
         this(false);
+    }
+
+
+    public void createJP2Metadata(GeoCoding geoCoding, int width, int height){
+        this.jp2resources.setImageHeight(height);
+        this.jp2resources.setImageWidth(width);
+        createJP2Metada(geoCoding, width, height);
+    }
+
+    /**
+     *
+     *Function that computes the UTM coordinates(Easting and Northing) of the Origin Point, the UTM zone and the
+     *offset that each pixel represents on the world map
+     */
+    private void createJP2Metada(GeoCoding geoCoding, int width, int height) {
+
+        double latitude = geoCoding.getGeoPos(new PixelPos(0.5f, 0.5f), null).getLat();
+        double longitude =  geoCoding.getGeoPos(new PixelPos(0.5f, 0.5f), null).getLon();
+        Deg2UTM pos =new Deg2UTM(latitude, longitude);
+        int geoLocationZone = 0;
+        if(latitude>=0) {
+            geoLocationZone = Integer.parseInt("326" + pos.Zone);
+        }
+        else{
+            geoLocationZone = Integer.parseInt("327" + pos.Zone);
+        }
+
+        this.jp2resources.setEpsgNumber(geoLocationZone);
+        this.jp2resources.setPoint2D( pos.Easting +"", pos.Northing+"");
+
+        GeoPos geoPos1 = geoCoding.getGeoPos(new PixelPos(0.5f, 0.5f), null);
+        GeoPos geoPos2 = geoCoding.getGeoPos(new PixelPos(0.5f, 1.5f), null);
+
+        double distance = computeDistance(geoPos1.getLat(),geoPos2.getLat(),geoPos1.getLon(), geoPos2.getLon());
+        this.jp2resources.setStepX(distance);
+        this.jp2resources.setStepY(distance);
+
+    }
+
+    /**
+     * Computes the distance in meters between 2 coordinates
+     * @param point1Lat latitude of the first point
+     * @param point2Lat latitude of the second point
+     * @param point1Long longitude of the first point
+     * @param point2Long longitude of the second point
+     * @return the distance in meters between 2 coordinates
+     */
+    private double computeDistance(double point1Lat, double point2Lat, double point1Long, double point2Long ) {
+        double dLat = point2Lat * Math.PI / 180 - point1Lat * Math.PI / 180;
+        double dLon = point2Long * Math.PI / 180 - point1Long * Math.PI / 180;
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(point1Lat * Math.PI / 180) * Math.cos(point2Lat * Math.PI / 180) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+        double c  = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        double d = EARTH_RADIUS * c;
+        return d*1000;
     }
 
     // Return the singleton instance
@@ -171,7 +247,7 @@ public class JP2Metadata extends IIOMetadata{
      * @param stepX
      * @param stepY
      */
-    private void appendOffsetVectorAttributes(IIOMetadataNode offsetVectorNode, int stepX, int stepY) {
+    private void appendOffsetVectorAttributes(IIOMetadataNode offsetVectorNode, double stepX, double stepY) {
         offsetVectorNode.setAttribute("offsetValueX",stepX+"" );
         offsetVectorNode.setAttribute("offsetValueY",stepY+"" );
     }
@@ -390,6 +466,66 @@ public class JP2Metadata extends IIOMetadata{
         }
     }
 
+    /**
+     * Clatt that transforms the Latitude and Longitude of the Origin Point in UTM coordinates
+     */
+    private class Deg2UTM
+    {
+        double Easting;
+        double Northing;
+        int Zone;
+        char Letter;
+        private  Deg2UTM(double Lat,double Lon)
+        {
+            Zone= (int) Math.floor(Lon/6+31);
+            if (Lat<-72)
+                Letter='C';
+            else if (Lat<-64)
+                Letter='D';
+            else if (Lat<-56)
+                Letter='E';
+            else if (Lat<-48)
+                Letter='F';
+            else if (Lat<-40)
+                Letter='G';
+            else if (Lat<-32)
+                Letter='H';
+            else if (Lat<-24)
+                Letter='J';
+            else if (Lat<-16)
+                Letter='K';
+            else if (Lat<-8)
+                Letter='L';
+            else if (Lat<0)
+                Letter='M';
+            else if (Lat<8)
+                Letter='N';
+            else if (Lat<16)
+                Letter='P';
+            else if (Lat<24)
+                Letter='Q';
+            else if (Lat<32)
+                Letter='R';
+            else if (Lat<40)
+                Letter='S';
+            else if (Lat<48)
+                Letter='T';
+            else if (Lat<56)
+                Letter='U';
+            else if (Lat<64)
+                Letter='V';
+            else if (Lat<72)
+                Letter='W';
+            else
+                Letter='X';
+            Easting=0.5*Math.log((1+Math.cos(Lat*Math.PI/180)*Math.sin(Lon*Math.PI/180-(6*Zone-183)*Math.PI/180))/(1-Math.cos(Lat*Math.PI/180)*Math.sin(Lon*Math.PI/180-(6*Zone-183)*Math.PI/180)))*0.9996*6399593.62/Math.pow((1+Math.pow(0.0820944379, 2)*Math.pow(Math.cos(Lat*Math.PI/180), 2)), 0.5)*(1+ Math.pow(0.0820944379,2)/2*Math.pow((0.5*Math.log((1+Math.cos(Lat*Math.PI/180)*Math.sin(Lon*Math.PI/180-(6*Zone-183)*Math.PI/180))/(1-Math.cos(Lat*Math.PI/180)*Math.sin(Lon*Math.PI/180-(6*Zone-183)*Math.PI/180)))),2)*Math.pow(Math.cos(Lat*Math.PI/180),2)/3)+500000;
+            Easting=Math.round(Easting*100)*0.01;
+            Northing = (Math.atan(Math.tan(Lat*Math.PI/180)/Math.cos((Lon*Math.PI/180-(6*Zone -183)*Math.PI/180)))-Lat*Math.PI/180)*0.9996*6399593.625/Math.sqrt(1+0.006739496742*Math.pow(Math.cos(Lat*Math.PI/180),2))*(1+0.006739496742/2*Math.pow(0.5*Math.log((1+Math.cos(Lat*Math.PI/180)*Math.sin((Lon*Math.PI/180-(6*Zone -183)*Math.PI/180)))/(1-Math.cos(Lat*Math.PI/180)*Math.sin((Lon*Math.PI/180-(6*Zone -183)*Math.PI/180)))),2)*Math.pow(Math.cos(Lat*Math.PI/180),2))+0.9996*6399593.625*(Lat*Math.PI/180-0.005054622556*(Lat*Math.PI/180+Math.sin(2*Lat*Math.PI/180)/2)+4.258201531e-05*(3*(Lat*Math.PI/180+Math.sin(2*Lat*Math.PI/180)/2)+Math.sin(2*Lat*Math.PI/180)*Math.pow(Math.cos(Lat*Math.PI/180),2))/4-1.674057895e-07*(5*(3*(Lat*Math.PI/180+Math.sin(2*Lat*Math.PI/180)/2)+Math.sin(2*Lat*Math.PI/180)*Math.pow(Math.cos(Lat*Math.PI/180),2))/4+Math.sin(2*Lat*Math.PI/180)*Math.pow(Math.cos(Lat*Math.PI/180),2)*Math.pow(Math.cos(Lat*Math.PI/180),2))/3);
+            if (Letter<'M')
+                Northing = Northing + 10000000;
+            Northing=Math.round(Northing*100)*0.01;
+        }
+    }
 
     @Override
     public void reset() {

@@ -6,13 +6,7 @@ import org.esa.snap.core.dataio.ProductWriterPlugIn;
 import org.esa.snap.core.datamodel.*;
 import org.esa.snap.core.image.ImageManager;
 import org.esa.snap.core.util.io.FileUtils;
-import org.geotools.referencing.CRS;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CRSFactory;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-
 import javax.imageio.IIOImage;
-import javax.imageio.metadata.IIOMetadata;
 import javax.media.jai.JAI;
 import javax.media.jai.operator.FormatDescriptor;
 import java.awt.image.DataBuffer;
@@ -73,7 +67,7 @@ public class JP2ProductWriter extends AbstractProductWriter {
 
     private void ensureNamingConvention() {
         if (this.outputFile != null) {
-            getSourceProduct().setName(FileUtils.getFilenameWithoutExtension(outputFile));
+            getSourceProduct().setName(FileUtils.getFilenameWithoutExtension(outputFile)+JP2FormatConstants._fileExtentions[0]);
         }
     }
 
@@ -112,9 +106,7 @@ public class JP2ProductWriter extends AbstractProductWriter {
         final int height = sourceProduct.getSceneRasterHeight();
         if(geoCoding!=null) {
             JP2Metadata metadata = new JP2Metadata(null, this.imageWriter);
-            metadata.jp2resources.setImageHeight(height);
-            metadata.jp2resources.setImageWidth(width);
-            createFallbackJP2Metada(geoCoding,width, height,metadata);
+            metadata.createJP2Metadata(geoCoding,width, height);
             this.imageWriter.write(metadata, outputImage, null);
         }else{
             this.imageWriter.write(null, outputImage, null);
@@ -123,46 +115,14 @@ public class JP2ProductWriter extends AbstractProductWriter {
         this.isWriten = true;
     }
 
-    private void createFallbackJP2Metada(GeoCoding geoCoding, int width, int height, JP2Metadata metadata) {
-        final int numTotMax = 128;
-        int numHor = (int) Math.sqrt(numTotMax * ((double) width / (double) height));
-        if (numHor < 2) {
-            numHor = 2;
-        }
-        int numVer = numTotMax / numHor;
-        if (numVer < 2) {
-            numVer = 2;
-        }
-        final GeoPos geoPos = new GeoPos();
-        final PixelPos pixelPos = new PixelPos();
-        for (int y = 0; y < numVer; y++) {
-            for (int x = 0; x < numHor; x++) {
-                pixelPos.setLocation(((width - 1) * (double) x / (numHor - 1.0f)) + 0.5,
-                        ((height - 1) * (double) y / (numVer - 1.0f)) + 0.5);
-                geoCoding.getGeoPos(pixelPos, geoPos);
-                geoCoding.getImageToMapTransform();
-            }
-        }
-        CoordinateReferenceSystem mapCRS =  geoCoding.getMapCRS();
-        try {
-            final Integer epsgCode = CRS.lookupEpsgCode(mapCRS, true);
-            if (epsgCode != null) {
-                mapCRS = CRS.decode("EPSG:" + epsgCode);
-                metadata.jp2resources.setEpsgNumber(epsgCode);
-            }
-        } catch (FactoryException e) {
-            e.printStackTrace();
-        }
-
-        metadata.jp2resources.setPoint2D(geoPos.getLat()+"", geoPos.getLon()+"");
-    }
-
     @Override
     public void flush() throws IOException {
+
     }
 
     @Override
     public void close() throws IOException {
+
     }
 
     @Override
@@ -171,6 +131,7 @@ public class JP2ProductWriter extends AbstractProductWriter {
             this.outputFile.delete();
         }
     }
+
     static int getMaxElemSizeBandDataType(final Band[] bands) {
         int maxSignedIntType = -1;
         int maxUnsignedIntType = -1;
@@ -217,6 +178,7 @@ public class JP2ProductWriter extends AbstractProductWriter {
 
         return DataBuffer.TYPE_UNDEFINED;
     }
+
     private RenderedImage getImageWithTargetDataType(int targetDataType, Band subsetBand) {
         RenderedImage sourceImage = subsetBand.getSourceImage();
         final int actualTargetBandDataType = sourceImage.getSampleModel().getDataType();
@@ -225,5 +187,4 @@ public class JP2ProductWriter extends AbstractProductWriter {
         }
         return sourceImage;
     }
-
 }

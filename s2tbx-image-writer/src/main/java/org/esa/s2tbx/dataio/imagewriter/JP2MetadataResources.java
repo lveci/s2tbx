@@ -19,8 +19,8 @@ public class JP2MetadataResources {
 
     private String fileStructureType = "Record Interleaved";
     private String fileName = "gmljp2://codestream/0";
-    private int stepX;
-    private int stepY;
+    private double stepX;
+    private double stepY;
     private Point2D.Double origin = null;
     private int imageWidth;
     private int imageHeight;
@@ -30,56 +30,56 @@ public class JP2MetadataResources {
 
     }
     /**
-     *
-     * @param x latitude coordinate
-     * @param y longitude coordinate
+     * Sets the coordinates of the origin
+     * @param x easting coordinate
+     * @param y northing coordinate
      */
     public void setPoint2D(String x, String y) {
-       this.origin = new Point2D.Double(Double.parseDouble(x), Double.parseDouble(y));
+        this.origin = new Point2D.Double(Double.parseDouble(x), Double.parseDouble(y));
     }
 
     /**
      *
-     * @return
+     * @return returns a Point2D of the origin
      */
     public Point2D getPoint(){
         return this.origin;
     }
 
     /**
-     *
-     * @param x
+     * Sets the spep that each pixel represents on the worldMap in meters
+     * @param x the step of each pixel on the x axis
      */
-    public void setStepX(int x){
+    public void setStepX(double x){
         this.stepX = x;
     }
 
     /**
      *
-     * @return
+     * @return step of each pixel on the x axis
      */
-    public int getStepX(){
+    public double getStepX(){
         return this.stepX;
     }
 
     /**
-     *
-     * @param y
+     * Sets the spep that each pixel represents on the worldMap in meters
+     * @param y the step of each pixel on the y axis
      */
-    public void setStepY(int y){
+    public void setStepY(double y){
         this.stepY = y;
     }
 
     /**
      *
-     * @return
+     * @return step of each pixel on the y axis
      */
-    public int getStepY(){
+    public double getStepY(){
         return this.stepY;
     }
 
     /**
-     *
+     * sets the file structure type of each Jpeg2000 file
      * @param fileStructureType
      */
     public void setFileStructureType(String fileStructureType){
@@ -110,26 +110,52 @@ public class JP2MetadataResources {
         return this.fileName;
     }
 
+    /**
+     *
+     * @return the width in pixels of the rendered image
+     */
     public int getImageWidth() {
         return imageWidth;
     }
 
+    /**
+     *
+     * @param imageWidth the width in pixels of the rendered image
+     */
     public void setImageWidth(int imageWidth) {
         this.imageWidth = imageWidth;
     }
 
+    /**
+     *
+     * @return the height in pixels of the rendered image
+     */
     public int getImageHeight() {
         return imageHeight;
     }
 
+    /**
+     *
+     * @param imageHeight the height in pixels of the rendered image
+     */
     public void setImageHeight(int imageHeight) {
         this.imageHeight = imageHeight;
     }
 
+    /**
+     *
+     * returns the EPSG code of the UTM zone
+     * @return  the EPSG code of the UTM zone where the origin of the product is located
+     */
     public int getEpsgNumber() {
         return epsgNumber;
     }
 
+    /**
+     *
+     * Sets the EPSG code of the UTM zone
+     * @param epsgNumber the EPSG code of the UTM zone where the origin of the product is located
+     */
     public void setEpsgNumber(int epsgNumber) {
         this.epsgNumber = epsgNumber;
     }

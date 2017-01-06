@@ -13,15 +13,19 @@ import java.util.logging.Logger;
 public class XMLBoxWriter {
     private FileOutputStream fileOutputStream;
     private JP2MetadataResources jp2MetadataResources;
-    private final static Logger logger = Logger.getLogger(JP2ImageWriterSpi.class.getName());
+    private final static Logger logger = Logger.getLogger(XMLBoxWriter.class.getName());
 
     /**
      * XMLBoxWriter constructor
      */
-    public XMLBoxWriter(){}
+    public XMLBoxWriter(){
+        this.fileOutputStream = null;
+        this.jp2MetadataResources = null;
+
+    }
 
 
-    public void writeStream(FileOutputStream fileOutputStream, JP2MetadataResources jp2Metadata) throws XMLStreamException, IOException {
+    public void setResources(FileOutputStream fileOutputStream, JP2MetadataResources jp2Metadata) throws XMLStreamException, IOException {
         if(fileOutputStream == null){
             logger.warning("no fileOutputStream has been set");
             throw new IllegalArgumentException();
@@ -33,6 +37,7 @@ public class XMLBoxWriter {
 
         this.fileOutputStream = fileOutputStream;
         this.jp2MetadataResources = jp2Metadata;
+
         xmlJP2WriteStream(fileOutputStream);
 
     }
@@ -100,7 +105,7 @@ public class XMLBoxWriter {
         writeAxis(tmpWriter, "y");
         writeOrigin(tmpWriter);
         writeOffsetVector(tmpWriter, this.jp2MetadataResources.getStepX(), 0);
-        writeOffsetVector(tmpWriter, 0, -Math.abs(this.jp2MetadataResources.getStepY()));
+        writeOffsetVector(tmpWriter,0, -this.jp2MetadataResources.getStepY());
         writeEndElement(2,tmpWriter);
         writeRangeSet(tmpWriter);
 
@@ -170,7 +175,7 @@ public class XMLBoxWriter {
      * @param Off2
      * @throws XMLStreamException
      */
-    private void writeOffsetVector(XMLStreamWriter tmpWriter, int Off1, int Off2 ) throws XMLStreamException{
+    private void writeOffsetVector(XMLStreamWriter tmpWriter, double Off1, double Off2 ) throws XMLStreamException{
         tmpWriter.writeStartElement("gml:offsetVector");
         tmpWriter.writeAttribute("srsName","urn:ogc:def:crs:EPSG::" + this.jp2MetadataResources.getEpsgNumber());
         tmpWriter.writeCharacters(Off1 + " " + Off2);
