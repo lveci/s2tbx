@@ -64,7 +64,6 @@ public class JP2ProductWriter extends AbstractProductWriter {
         deleteOutput();
         for(int index = 0; index<getSourceProduct().getNumBands();index++){
             if(getSourceProduct().getBandAt(index).getSourceImage().getSampleModel().getDataType()>= DataBuffer.TYPE_INT){
-                Dialogs.showWarning("OpenJPEG cannot encode raw components with bit depth > 16 bits");
                 throw new JP2DataException("OpenJPEG cannot encode raw components with bit depth > 16 bits");
             }
         }
