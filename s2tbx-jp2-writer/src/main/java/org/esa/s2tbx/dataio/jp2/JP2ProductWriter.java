@@ -1,11 +1,10 @@
 package org.esa.s2tbx.dataio.jp2;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.sun.prism.PixelFormat;
-import org.esa.s2tbx.dataio.jp2.internal.JP2DataException;
-import org.esa.s2tbx.dataio.jp2.metadata.JP2Metadata;
 import org.esa.s2tbx.dataio.jp2.internal.JP2Constants;
+import org.esa.s2tbx.dataio.jp2.internal.JP2DataException;
 import org.esa.s2tbx.dataio.jp2.internal.JP2ImageWriter;
+import org.esa.s2tbx.dataio.jp2.metadata.JP2Metadata;
 import org.esa.snap.core.dataio.AbstractProductWriter;
 import org.esa.snap.core.dataio.ProductWriterPlugIn;
 import org.esa.snap.core.datamodel.Band;
@@ -14,13 +13,11 @@ import org.esa.snap.core.datamodel.Product;
 import org.esa.snap.core.datamodel.ProductData;
 import org.esa.snap.core.image.ImageManager;
 import org.esa.snap.core.util.io.FileUtils;
-import org.esa.snap.rcp.util.Dialogs;
 
 import javax.imageio.IIOImage;
 import javax.media.jai.JAI;
 import javax.media.jai.operator.FormatDescriptor;
 import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.awt.image.renderable.ParameterBlock;
 import java.io.File;
@@ -123,6 +120,7 @@ public class JP2ProductWriter extends AbstractProductWriter {
         GeoCoding geoCoding = sourceProduct.getSceneGeoCoding();
         final int width = sourceProduct.getSceneRasterWidth();
         final int height = sourceProduct.getSceneRasterHeight();
+        this.imageWriter.setNumberResolution(bandsToWrite.get(0).getSourceImage().getModel().getLevelCount());
         if (geoCoding != null) {
             JP2Metadata metadata = new JP2Metadata(null, this.imageWriter);
             metadata.createJP2Metadata(geoCoding, width, height);
