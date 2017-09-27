@@ -34,18 +34,18 @@
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-core</artifactId>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-ui</artifactId>
-        </dependency>
-        <dependency>
+        </dependency-->
+        <!--dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-rcp</artifactId>
         </dependency>
         <dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-tango</artifactId>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>org.xeustechnologies</groupId>
             <artifactId>jtar</artifactId>
@@ -62,7 +62,7 @@
             <groupId>org.jvnet.ogc</groupId>
             <artifactId>ogc-tools-gml-jts</artifactId>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-awt</artifactId>
             <version>${netbeans.version}</version>
@@ -71,7 +71,7 @@
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-ui</artifactId>
             <version>${netbeans.version}</version>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

@@ -68,10 +68,10 @@
             <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-ui</artifactId>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
