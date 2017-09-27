@@ -20,7 +20,7 @@
 
     <groupId>org.esa.s2tbx</groupId>
     <artifactId>s2tbx</artifactId>
-    <version>6.0.0-SNAPSHOT</version>
+    <version>6.0.0-Skywatch-SNAPSHOT</version>
     <name>Sentinel-2 Toolbox</name>
     <description>Tools for the Sentinel-2 Satellite Exploitation</description>
     <url>https://github.com/senbox-org/s2tbx</url>
@@ -78,6 +78,18 @@
 
     <repositories>
         <repository>
+          <id>skywatch-dev</id>
+          <url>s3://skywatch-dev/mavenrepo/release</url>
+          <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+        </repository>
+        <repository>
             <id>snap-repo-public</id>
             <name>Public Maven Repository for SNAP</name>
             <url>http://nexus.senbox.net/nexus/content/repositories/public/</url>
@@ -109,18 +121,14 @@
     </pluginRepositories>
 
     <distributionManagement>
-        <repository>
-            <id>snap-repo-public</id>
-            <name>Public Maven Repository for SNAP</name>
-            <url>http://nexus.senbox.net/nexus/content/repositories/releases/</url>
-            <uniqueVersion>false</uniqueVersion>
-        </repository>
         <snapshotRepository>
-            <id>snap-repo-public</id>
-            <name>Public Maven Snapshot Repository for SNAP</name>
-            <url>http://nexus.senbox.net/nexus/content/repositories/snapshots/</url>
-            <uniqueVersion>false</uniqueVersion>
+          <id>skywatch-dev</id>
+          <url>s3://skywatch-dev/mavenrepo/snapshot</url>
         </snapshotRepository>
+        <repository>
+          <id>skywatch-dev</id>
+          <url>s3://skywatch-dev/mavenrepo/release</url>
+        </repository>
     </distributionManagement>
 
     <dependencyManagement>
@@ -502,6 +510,13 @@
             </plugins>
         </pluginManagement>
 
+        <extensions>
+          <extension>
+            <groupId>org.kuali.maven.wagons</groupId>
+            <artifactId>maven-s3-wagon</artifactId>
+            <version>1.2.1</version>
+          </extension>
+        </extensions>
     </build>
 
 
