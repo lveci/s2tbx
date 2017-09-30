@@ -67,8 +67,9 @@
     <packaging>pom</packaging>
 
     <properties>
-        <snap.version>6.0.0-SNAPSHOT</snap.version>
-        <s2tbx.version>6.0.0-SNAPSHOT</s2tbx.version>
+        <snap.version>6.0.0-Skywatch-SNAPSHOT</snap.version>
+        <s2tbx.version>6.0.0-Skywatch-SNAPSHOT</s2tbx.version>
+        <snap.reader.tests.version>6.0.0-SNAPSHOT</snap.reader.tests.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <user.language>en</user.language>
         <netbeans.version>RELEASE82</netbeans.version>
@@ -242,7 +243,7 @@
             <dependency>
                 <groupId>org.esa.snap</groupId>
                 <artifactId>snap-reader-tests</artifactId>
-                <version>${snap.version}</version>
+                <version>${snap.reader.tests.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -251,7 +252,7 @@
                 <artifactId>snap-reader-tests</artifactId>
                 <type>test-jar</type>
                 <scope>test</scope>
-                <version>${snap.version}</version>
+                <version>${snap.reader.tests.version}</version>
             </dependency>
 
             <!-- NetBeans -->
@@ -475,7 +476,7 @@
                             <configuration>
                                 <name>project.nbmSpecVersion</name>
                                 <value>${project.version}</value>
-                                <regex>-SNAPSHOT</regex>
+                                <regex>-Skywatch-SNAPSHOT</regex>
                                 <replacement>.0</replacement>
                                 <failIfNoMatch>false</failIfNoMatch>
                             </configuration>
