@@ -69,7 +69,7 @@
     <properties>
         <snap.version>6.0.0-Skywatch-SNAPSHOT</snap.version>
         <s2tbx.version>6.0.0-Skywatch-SNAPSHOT</s2tbx.version>
-        <snap.reader.tests.version>6.0.0-SNAPSHOT</snap.reader.tests.version>
+        <snap.reader.tests.version>6.0.0-Skywatch-SNAPSHOT</snap.reader.tests.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <user.language>en</user.language>
         <netbeans.version>RELEASE82</netbeans.version>
