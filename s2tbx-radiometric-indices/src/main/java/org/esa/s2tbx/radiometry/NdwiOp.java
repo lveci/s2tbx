@@ -26,7 +26,6 @@ import org.esa.snap.core.gpf.OperatorSpi;
 import org.esa.snap.core.gpf.Tile;
 import org.esa.snap.core.gpf.annotations.OperatorMetadata;
 import org.esa.snap.core.gpf.annotations.Parameter;
-import org.esa.snap.engine_utilities.eo.Constants;
 
 import java.awt.*;
 import java.util.Map;
@@ -54,14 +53,14 @@ public class NdwiOp extends BaseIndexOp{
                     " the operator will try to find the best fitting band.",
             rasterDataNodeType = Band.class)
     @BandParameter(minWavelength = 3000, maxWavelength = 8000)
-    private String mirSourceBandStr;
+    private String mirSourceBand;
 
     @Parameter(label = "NIR source band",
             description = "The near-infrared band for the NDWI computation. If not provided," +
                     " the operator will try to find the best fitting band.",
             rasterDataNodeType = Band.class)
     @BandParameter(minWavelength = 800, maxWavelength = 900)
-    private String nirSourceBandStr;
+    private String nirSourceBand;
 
     public NdwiOp() {
         super();
@@ -76,46 +75,36 @@ public class NdwiOp extends BaseIndexOp{
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-
         pm.beginTask("Computing NDWI", rectangle.height);
         try {
-            final int xMin = rectangle.x;
-            final int xMax = rectangle.x + rectangle.width;
-            final int yMin = rectangle.y;
-            final int yMax = rectangle.y + rectangle.height;
+            final Band mirBand = getSourceProduct().getBand(mirSourceBand);
+            final Band nirBand = getSourceProduct().getBand(nirSourceBand);
+            final double mirBandNoDataValue = mirBand.scale(mirBand.getNoDataValue());
+            final double nirBandNoDataValue = nirBand.scale(nirBand.getNoDataValue());
 
-            final Band mirSourceBand = sourceProduct.getBand(mirSourceBandStr);
-            final double mirBandNoDataValue = mirSourceBand.scale(mirSourceBand.getNoDataValue());
-            final Tile mirTile = getSourceTile(mirSourceBand, rectangle);
+            Tile mirTile = getSourceTile(getSourceProduct().getBand(mirSourceBand), rectangle);
+            Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
-            final Band nirSourceBand = sourceProduct.getBand(nirSourceBandStr);
-            final double nirBandNoDataValue = nirSourceBand.scale(nirSourceBand.getNoDataValue());
-            final Tile nirTile = getSourceTile(nirSourceBand, rectangle);
+            Tile ndwi = targetTiles.get(targetProduct.getBand(BAND_NAME));
+            Tile ndwiFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
-            final Band ndwiBand = targetProduct.getBand(BAND_NAME);
-            ndwiBand.setNoDataValueUsed(true);
-            ndwiBand.setNoDataValue(Constants.NO_DATA_VALUE);
-            final Tile ndwiTile = targetTiles.get(ndwiBand);
+            targetProduct.getBand(BAND_NAME).setNoDataValueUsed(true);
+            targetProduct.getBand(BAND_NAME).setNoDataValue(0.0);
 
-            final Band ndwiFlagsBand = targetProduct.getBand(FLAGS_BAND_NAME);
-            //ndwiFlagsBand.setNoDataValueUsed(true);
-            //ndwiFlagsBand.setNoDataValue(Constants.NO_DATA_VALUE);
-            final Tile ndwiFlagsTile = targetTiles.get(ndwiFlagsBand);
+            float ndwiValue;
 
-            double ndwiValue;
-
-            for (int y = yMin; y < yMax; y++) {
-                for (int x = xMin; x < xMax; x++) {
+            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+                for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
                     double nir = nirTile.getSampleDouble(x, y);
                     double mir = mirTile.getSampleDouble(x, y);
                     if (nir != nirBandNoDataValue && mir != mirBandNoDataValue) {
                         nir = nirFactor * nir;
                         mir = mirFactor * mir;
-                        ndwiValue = (nir - mir) / (nir + mir);
-                        ndwiTile.setSample(x, y, computeFlag(x, y, (float)ndwiValue, ndwiFlagsTile));
+                        ndwiValue = (float)((nir - mir) / (nir + mir));
+                        ndwi.setSample(x, y, computeFlag(x, y, ndwiValue, ndwiFlags));
                     } else {
-                        ndwiTile.setSample(x, y, computeFlag(x, y, (float)Constants.NO_DATA_VALUE, ndwiFlagsTile));
+                        ndwi.setSample(x, y, computeFlag(x, y, 0.0f, ndwiFlags));
                     }
                 }
                 checkForCancellation();
