@@ -79,6 +79,12 @@ public class Ndi45Op extends BaseIndexOp{
             Tile redB4Tile = getSourceTile(getSourceProduct().getBand(redSourceBand4), rectangle);
             Tile redB5Tile = getSourceTile(getSourceProduct().getBand(redSourceBand5), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand4),
+                    getSourceProduct().getBand(redSourceBand5)
+            );
+
             Tile ndi45 = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile ndi45Flags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -86,8 +92,16 @@ public class Ndi45Op extends BaseIndexOp{
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-                    final float redB5 = redB5Factor * redB5Tile.getSampleFloat(x, y);
-                    final float redB4 = redB4Factor * redB4Tile.getSampleFloat(x, y);
+
+                    final float redB5Sample = redB5Tile.getSampleFloat(x, y);
+                    final float redB4Sample = redB4Tile.getSampleFloat(x, y);
+                    final float redB5 = redB5Factor * redB5Sample;
+                    final float redB4 = redB4Factor * redB4Sample;
+
+                    if(noDataValueVerifier.isNoDataValue(redB5Sample, redB4Sample)) {
+                        noDataValueVerifier.setNoData(ndi45, ndi45Flags, x, y);
+                        continue;
+                    }
 
                     ndi45Value = (redB5 - redB4) / (redB5 + redB4);
 

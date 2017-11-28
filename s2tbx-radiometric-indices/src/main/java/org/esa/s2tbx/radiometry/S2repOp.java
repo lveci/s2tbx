@@ -102,6 +102,14 @@ public class S2repOp extends BaseIndexOp{
             Tile redB6Tile = getSourceTile(getSourceProduct().getBand(redSourceBand6), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand4),
+                    getSourceProduct().getBand(redSourceBand5),
+                    getSourceProduct().getBand(redSourceBand6),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile s2rep = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile s2repFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -110,10 +118,19 @@ public class S2repOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float redB4 = redB4Factor * redB4Tile.getSampleFloat(x, y);
-                    final float redB5 = redB5Factor * redB5Tile.getSampleFloat(x, y);
-                    final float redB6 = redB6Factor * redB6Tile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float redB4Sample = redB4Tile.getSampleFloat(x, y);
+                    final float redB5Sample = redB5Tile.getSampleFloat(x, y);
+                    final float redB6Sample = redB6Tile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float redB4 = redB4Factor * redB4Sample;
+                    final float redB5 = redB5Factor * redB5Sample;
+                    final float redB6 = redB6Factor * redB6Sample;
+
+                    if(noDataValueVerifier.isNoDataValue(nirSample, redB4Sample, redB5Sample, redB6Sample)) {
+                        noDataValueVerifier.setNoData(s2rep, s2repFlags, x, y);
+                        continue;
+                    }
 
                     s2repValue = 705.0f + 35.0f * ( ( ( (nir + redB4) / 2.0f ) - redB5 ) / (redB6 - redB5) );
 

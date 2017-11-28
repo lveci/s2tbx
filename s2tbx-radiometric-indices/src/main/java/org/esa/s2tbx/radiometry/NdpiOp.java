@@ -80,6 +80,12 @@ public class NdpiOp extends BaseIndexOp{
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
             Tile swirTile = getSourceTile(getSourceProduct().getBand(swirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(greenSourceBand),
+                    getSourceProduct().getBand(swirSourceBand)
+            );
+
             Tile ndpi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile ndpiFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -88,8 +94,15 @@ public class NdpiOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float swir = swirFactor * swirTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    final float swirSample = swirTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float swir = swirFactor * swirSample;
+                    final float green = greenFactor * greenSample;
+
+                    if(noDataValueVerifier.isNoDataValue(swirSample, greenSample)) {
+                        noDataValueVerifier.setNoData(ndpi, ndpiFlags, x, y);
+                        continue;
+                    }
 
                     ndpiValue = (green - swir)/(green + swir);// (1 - green/swir)/(1 + green/swir)
 

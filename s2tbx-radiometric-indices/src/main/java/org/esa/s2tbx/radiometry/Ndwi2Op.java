@@ -80,6 +80,12 @@ public class Ndwi2Op extends BaseIndexOp{
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(greenSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile ndwi2 = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile ndwi2Flags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -87,9 +93,15 @@ public class Ndwi2Op extends BaseIndexOp{
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float green = greenFactor * greenSample;
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    if(noDataValueVerifier.isNoDataValue(greenSample, nirSample)) {
+                        noDataValueVerifier.setNoData(ndwi2, ndwi2Flags, x, y);
+                        continue;
+                    }
 
                     ndwi2Value = (green - nir)/(green + nir);
 

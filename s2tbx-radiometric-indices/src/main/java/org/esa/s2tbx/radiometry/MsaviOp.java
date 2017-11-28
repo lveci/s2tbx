@@ -86,6 +86,12 @@ public class MsaviOp extends BaseIndexOp {
             Tile redTile = getSourceTile(getSourceProduct().getBand(redSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile msavi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile msaviFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -94,8 +100,15 @@ public class MsaviOp extends BaseIndexOp {
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float red = redFactor * redSample;
+
+                    if(noDataValueVerifier.isNoDataValue(nirSample, redSample)) {
+                        noDataValueVerifier.setNoData(msavi, msaviFlags, x, y);
+                        continue;
+                    }
 
                     final float ndviIndexValue = (nir - red) / (nir + red);
                     final float wdviIndexValue =  nir - (slope * red);

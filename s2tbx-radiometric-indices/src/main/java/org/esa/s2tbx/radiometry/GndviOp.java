@@ -80,6 +80,12 @@ public class GndviOp extends BaseIndexOp{
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(greenSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile gndvi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile gndviFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -88,8 +94,15 @@ public class GndviOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float green = greenFactor * greenSample;
+
+                    if(noDataValueVerifier.isNoDataValue(nirSample, greenSample)) {
+                        noDataValueVerifier.setNoData(gndvi, gndviFlags, x, y);
+                        continue;
+                    }
 
                     gndviValue = (nir - green)/(nir + green);
 

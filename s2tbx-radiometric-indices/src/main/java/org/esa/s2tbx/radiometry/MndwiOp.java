@@ -80,6 +80,12 @@ public class MndwiOp extends BaseIndexOp{
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
             Tile mirTile = getSourceTile(getSourceProduct().getBand(mirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(greenSourceBand),
+                    getSourceProduct().getBand(mirSourceBand)
+            );
+
             Tile mndwi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile mndwiFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -88,8 +94,15 @@ public class MndwiOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float mir = mirFactor * mirTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    final float mirSample = mirTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float mir = mirFactor * mirSample;
+                    final float green = greenFactor * greenSample;
+
+                    if(noDataValueVerifier.isNoDataValue(mirSample, greenSample)) {
+                        noDataValueVerifier.setNoData(mndwi, mndwiFlags, x, y);
+                        continue;
+                    }
 
                     mndwiValue = (green - mir)/(green + mir);
 

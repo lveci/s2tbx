@@ -98,15 +98,30 @@ public class ArviOp extends BaseIndexOp{
             Tile arvi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile arviFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(blueSourceBand),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             float rbEquationValue;
             float arviValue;
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float blue = blueFactor * blueTile.getSampleFloat(x, y);
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
+                    final float blueSample = blueTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float blue = blueFactor * blueSample;
+                    final float red = redFactor * redSample;
+                    final float nir = nirFactor * nirSample;
+
+                    if(noDataValueVerifier.isNoDataValue(blueSample, redSample, nirSample)) {
+                        noDataValueVerifier.setNoData(arvi, arviFlags, x, y);
+                        continue;
+                    }
 
                     rbEquationValue = red - gammaParameter * (blue - red);
 

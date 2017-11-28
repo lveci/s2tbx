@@ -83,6 +83,12 @@ public class Msavi2Op extends BaseIndexOp {
             Tile redTile = getSourceTile(getSourceProduct().getBand(redSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile msavi2 = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile msavi2Flags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -90,9 +96,15 @@ public class Msavi2Op extends BaseIndexOp {
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float red = redFactor * redSample;
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
+                    if(noDataValueVerifier.isNoDataValue(redSample, nirSample)) {
+                        noDataValueVerifier.setNoData(msavi2, msavi2Flags, x, y);
+                        continue;
+                    }
 
                     msavi2Value = (float) ((1f/2f) * (2*(nir + 1) - Math.sqrt( (2*nir + 1)*(2*nir + 1) - 8*(nir - red))));
 

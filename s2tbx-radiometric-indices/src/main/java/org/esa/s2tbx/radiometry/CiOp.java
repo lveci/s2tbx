@@ -83,6 +83,12 @@ public class CiOp extends BaseIndexOp{
             Tile redTile = getSourceTile(getSourceProduct().getBand(redSourceBand), rectangle);
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(greenSourceBand)
+            );
+
             Tile ci = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile ciFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -91,8 +97,15 @@ public class CiOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float red = redFactor * redSample;
+                    final float green = greenFactor * greenSample;
+
+                    if(noDataValueVerifier.isNoDataValue(redSample, greenSample)) {
+                        noDataValueVerifier.setNoData(ci, ciFlags, x, y);
+                        continue;
+                    }
 
                     ciValue = (red - green)/(red + green);
 

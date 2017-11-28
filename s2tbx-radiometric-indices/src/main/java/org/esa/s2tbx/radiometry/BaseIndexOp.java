@@ -98,6 +98,8 @@ public abstract class BaseIndexOp extends Operator {
     private FlagCoding flagCoding;
     private List<MaskDescriptor> maskDescriptors;
 
+    private static final float nodatavalue = 0;
+
     protected BaseIndexOp() {
         maskDescriptors = new ArrayList<>();
         bandFields = Arrays.stream(getClass().getDeclaredFields())
@@ -121,6 +123,7 @@ public abstract class BaseIndexOp extends Operator {
         }
         int sceneWidth = 0, sceneHeight = 0;
         boolean resampleNeeded = !RESAMPLE_NONE.equals(this.resampleType);
+        boolean nodataValueUsed = false;
         if (resampleNeeded) {
             for (String bandName : this.sourceBandNames) {
                 Band band = this.sourceProduct.getBand(bandName);
@@ -135,6 +138,9 @@ public abstract class BaseIndexOp extends Operator {
                         sceneWidth = bandRasterWidth;
                         sceneHeight = band.getRasterHeight();
                     }
+                }
+                if(band.isNoDataValueUsed()) {
+                    nodataValueUsed = true;
                 }
             }
             this.sourceProduct = resample(this.sourceProduct, sceneWidth, sceneHeight);
@@ -159,6 +165,10 @@ public abstract class BaseIndexOp extends Operator {
         targetProduct.setSceneGeoCoding(sceneGeoCoding);
 
         Band outputBand = new Band(name, ProductData.TYPE_FLOAT32, sceneWidth, sceneHeight);
+        if(nodataValueUsed) {
+            outputBand.setNoDataValueUsed(true);
+            outputBand.setNoDataValue(nodatavalue);
+        }
         targetProduct.addBand(outputBand);
 
         Band flagsOutputBand = new Band(FLAGS_BAND_NAME, ProductData.TYPE_INT32, sceneWidth, sceneHeight);
@@ -304,6 +314,33 @@ public abstract class BaseIndexOp extends Operator {
             this.description = description;
             this.color = color;
             this.transparency = transparency;
+        }
+    }
+
+    protected class NoDataValueVerifier {
+        private final boolean nodataValueUsed;
+        private final List<Float> nodataValueList = new ArrayList<>();
+
+        public NoDataValueVerifier(final Band targetBand, final Band ... bands) {
+            nodataValueUsed = targetBand.isNoDataValueUsed();
+            for(Band band : bands) {
+                nodataValueList.add((float)band.getGeophysicalNoDataValue());
+            }
+        }
+
+        public boolean isNoDataValue(float ... samples) throws OperatorException {
+            if(nodataValueUsed) {
+                if(nodataValueList.size() != samples.length) {
+                    throw new OperatorException("NoDataValue sample list size does equal the number of bands");
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public void setNoData(Tile targetTile, Tile flagTile, int x, int y) {
+            targetTile.setSample(x, y, nodatavalue);
+            flagTile.setSample(x, y, 0);
         }
     }
 }

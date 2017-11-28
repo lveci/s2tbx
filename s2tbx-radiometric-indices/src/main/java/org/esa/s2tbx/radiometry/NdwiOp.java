@@ -77,35 +77,35 @@ public class NdwiOp extends BaseIndexOp{
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Computing NDWI", rectangle.height);
         try {
-            final Band mirBand = getSourceProduct().getBand(mirSourceBand);
-            final Band nirBand = getSourceProduct().getBand(nirSourceBand);
-            final double mirBandNoDataValue = mirBand.scale(mirBand.getNoDataValue());
-            final double nirBandNoDataValue = nirBand.scale(nirBand.getNoDataValue());
-
             Tile mirTile = getSourceTile(getSourceProduct().getBand(mirSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(mirSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile ndwi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile ndwiFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
-
-            targetProduct.getBand(BAND_NAME).setNoDataValueUsed(true);
-            targetProduct.getBand(BAND_NAME).setNoDataValue(0.0);
 
             float ndwiValue;
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float mirSample = mirTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float mir = mirFactor * mirSample;
 
-                    double nir = nirTile.getSampleDouble(x, y);
-                    double mir = mirTile.getSampleDouble(x, y);
-                    if (nir != nirBandNoDataValue && mir != mirBandNoDataValue) {
-                        nir = nirFactor * nir;
-                        mir = mirFactor * mir;
-                        ndwiValue = (float)((nir - mir) / (nir + mir));
-                        ndwi.setSample(x, y, computeFlag(x, y, ndwiValue, ndwiFlags));
-                    } else {
-                        ndwi.setSample(x, y, computeFlag(x, y, 0.0f, ndwiFlags));
+                    if(noDataValueVerifier.isNoDataValue(mirSample, nirSample)) {
+                        noDataValueVerifier.setNoData(ndwi, ndwiFlags, x, y);
+                        continue;
                     }
+
+                    ndwiValue = (nir - mir)/(nir + mir);
+
+                    ndwi.setSample(x, y, computeFlag(x, y, ndwiValue, ndwiFlags));
                 }
                 checkForCancellation();
                 pm.worked(1);

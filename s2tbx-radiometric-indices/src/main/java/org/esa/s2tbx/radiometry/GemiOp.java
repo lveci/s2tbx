@@ -75,6 +75,12 @@ public class GemiOp extends BaseIndexOp {
             Tile redTile = getSourceTile(getSourceProduct().getBand(redSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile gemi = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile gemiFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -82,8 +88,15 @@ public class GemiOp extends BaseIndexOp {
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float red = redFactor * redSample;
+
+                    if(noDataValueVerifier.isNoDataValue(nirSample, redSample)) {
+                        noDataValueVerifier.setNoData(gemi, gemiFlags, x, y);
+                        continue;
+                    }
 
                     final float eta = ( 2*(nir*nir - red*red) + 1.5f*nir + 0.5f*red ) / (nir + red + 0.5f);
 

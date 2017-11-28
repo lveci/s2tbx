@@ -91,6 +91,13 @@ public class McariOp extends BaseIndexOp{
             Tile red2Tile = getSourceTile(getSourceProduct().getBand(red2SourceBand), rectangle);
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(red1SourceBand),
+                    getSourceProduct().getBand(red2SourceBand),
+                    getSourceProduct().getBand(greenSourceBand)
+            );
+
             Tile mcari = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile mcariFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -99,9 +106,17 @@ public class McariOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float redB4 = red1Factor * red1Tile.getSampleFloat(x, y);
-                    final float redB5 = red2Factor * red2Tile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
+                    final float red1Sample = red1Tile.getSampleFloat(x, y);
+                    final float red2Sample = red2Tile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float redB4 = red1Factor * red1Sample;
+                    final float redB5 = red2Factor * red2Sample;
+                    final float green = greenFactor * greenSample;
+
+                    if(noDataValueVerifier.isNoDataValue(red1Sample, red2Sample, greenSample)) {
+                        noDataValueVerifier.setNoData(mcari, mcariFlags, x, y);
+                        continue;
+                    }
 
                     mcariValue = ( (redB5 - redB4) - 0.2f*(redB5 - green) ) * (redB5 / redB4);
 

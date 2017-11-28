@@ -94,6 +94,13 @@ public class MtciOp extends BaseIndexOp{
             Tile redB5Tile = getSourceTile(getSourceProduct().getBand(redSourceBand5), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand4),
+                    getSourceProduct().getBand(redSourceBand5),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile mtci = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile mtciFlags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -102,9 +109,17 @@ public class MtciOp extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
-                    final float redB4 = redB4Factor * redB4Tile.getSampleFloat(x, y);
-                    final float redB5 = redB5Factor * redB5Tile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float redB4Sample = redB4Tile.getSampleFloat(x, y);
+                    final float redB5Sample = redB5Tile.getSampleFloat(x, y);
+                    final float nir = nirFactor * nirSample;
+                    final float redB4 = redB4Factor * redB4Sample;
+                    final float redB5 = redB5Factor * redB5Sample;
+
+                    if(noDataValueVerifier.isNoDataValue(nirSample, redB4Sample, redB5Sample)) {
+                        noDataValueVerifier.setNoData(mtci, mtciFlags, x, y);
+                        continue;
+                    }
 
                     mtciValue = (nir - redB5) / (redB5 - redB4);
 

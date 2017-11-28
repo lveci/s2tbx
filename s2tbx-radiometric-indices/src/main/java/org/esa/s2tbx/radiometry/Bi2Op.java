@@ -93,6 +93,13 @@ public class Bi2Op extends BaseIndexOp{
             Tile greenTile = getSourceTile(getSourceProduct().getBand(greenSourceBand), rectangle);
             Tile nirTile = getSourceTile(getSourceProduct().getBand(nirSourceBand), rectangle);
 
+            final NoDataValueVerifier noDataValueVerifier = new NoDataValueVerifier(
+                    targetProduct.getBand(BAND_NAME),
+                    getSourceProduct().getBand(redSourceBand),
+                    getSourceProduct().getBand(greenSourceBand),
+                    getSourceProduct().getBand(nirSourceBand)
+            );
+
             Tile bi2 = targetTiles.get(targetProduct.getBand(BAND_NAME));
             Tile bi2Flags = targetTiles.get(targetProduct.getBand(FLAGS_BAND_NAME));
 
@@ -101,9 +108,17 @@ public class Bi2Op extends BaseIndexOp{
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 
-                    final float red = redFactor * redTile.getSampleFloat(x, y);
-                    final float green = greenFactor * greenTile.getSampleFloat(x, y);
-                    final float nir = nirFactor * nirTile.getSampleFloat(x, y);
+                    final float redSample = redTile.getSampleFloat(x, y);
+                    final float greenSample = greenTile.getSampleFloat(x, y);
+                    final float nirSample = nirTile.getSampleFloat(x, y);
+                    final float red = redFactor * redSample;
+                    final float green = greenFactor * greenSample;
+                    final float nir = nirFactor * nirSample;
+
+                    if(noDataValueVerifier.isNoDataValue(redSample, greenSample, nirSample)) {
+                        noDataValueVerifier.setNoData(bi2, bi2Flags, x, y);
+                        continue;
+                    }
 
                     bi2Value = (float) Math.sqrt( ( (red * red) + (green * green) + (nir * nir) ) / 3.0f );
 
