@@ -98,7 +98,7 @@ public abstract class BaseIndexOp extends Operator {
     private FlagCoding flagCoding;
     private List<MaskDescriptor> maskDescriptors;
 
-    private static final float nodatavalue = 0;
+    private static final float nodatavalue = Float.NaN;
 
     protected BaseIndexOp() {
         maskDescriptors = new ArrayList<>();
