@@ -333,7 +333,12 @@ public abstract class BaseIndexOp extends Operator {
                 if(nodataValueList.size() != samples.length) {
                     throw new OperatorException("NoDataValue sample list size does equal the number of bands");
                 }
-                return true;
+                for(int i=0; i < samples.length; ++i) {
+                    if(nodataValueList.get(i).equals(samples[i])) {
+                        return true;
+                    }
+                }
+                return false;
             }
             return false;
         }

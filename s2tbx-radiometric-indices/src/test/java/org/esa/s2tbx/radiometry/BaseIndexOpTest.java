@@ -115,4 +115,46 @@ public abstract class BaseIndexOpTest<O extends BaseIndexOp> extends TestCase {
         return values;
     }
 
+    public void testTargetNoDataValue() {
+        final float srcNoDataValue = -999.0f;
+
+        for(Band srcBand : sourceProduct.getBands()) {
+            srcBand.setNoDataValueUsed(true);
+            srcBand.setNoDataValue(srcNoDataValue);
+            srcBand.setPixelFloat(0, 0, srcNoDataValue);
+        }
+
+        O operator = null;
+        try {
+            operatorClass = (Class<O>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+            @SuppressWarnings("unchecked") Constructor<O> ctor = operatorClass.getConstructor();
+            operator = ctor.newInstance();
+        } catch (Exception e1) {
+            try {
+                @SuppressWarnings("unchecked") Constructor<O> ctor = operatorClass.getDeclaredConstructor();
+                operator = ctor.newInstance();
+            } catch (Exception e) {
+                throw new OperatorException(e.getMessage());
+            }
+        }
+        operator.setSourceProduct(sourceProduct);
+
+        try {
+            for (Map.Entry<String, Float> entry : annotatedFields.entrySet()) {
+                Field field = operatorClass.getDeclaredField(entry.getKey());
+                field.setAccessible(true);
+                if (field.isAnnotationPresent(Parameter.class)) {
+                    field.setFloat(operator, entry.getValue());
+                }
+            }
+        } catch (Exception e) {
+            throw new OperatorException(e.getMessage());
+        }
+        Product targetProduct = operator.getTargetProduct();
+
+        final Band band = targetProduct.getBandAt(0);
+
+        assertEquals(true, band.isNoDataValueUsed());
+        assertEquals(Float.NaN, band.getSampleFloat(0, 0), 1e-6);
+    }
 }
