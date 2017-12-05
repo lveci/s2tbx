@@ -153,8 +153,9 @@ public abstract class BaseIndexOpTest<O extends BaseIndexOp> extends TestCase {
         Product targetProduct = operator.getTargetProduct();
 
         final Band band = targetProduct.getBandAt(0);
+        final double trgNoDataValue = band.getNoDataValue();
 
         assertEquals(true, band.isNoDataValueUsed());
-        assertEquals(Float.NaN, band.getSampleFloat(0, 0), 1e-6);
+        assertEquals(trgNoDataValue, band.getSampleFloat(0, 0), 1e-6);
     }
 }
