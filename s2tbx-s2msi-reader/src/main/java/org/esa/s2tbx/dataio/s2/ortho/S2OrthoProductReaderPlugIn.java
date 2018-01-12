@@ -88,6 +88,10 @@ public abstract class S2OrthoProductReaderPlugIn extends S2ProductReaderPlugIn {
             return DecodeQualification.UNABLE;
         }
 
+        if(!(file.getName().startsWith("S2"))) {
+            return DecodeQualification.UNABLE;
+        }
+
         crsCache.ensureIsCached(canonicalPath);
 
         level = crsCache.getProductLevel(canonicalPathString);

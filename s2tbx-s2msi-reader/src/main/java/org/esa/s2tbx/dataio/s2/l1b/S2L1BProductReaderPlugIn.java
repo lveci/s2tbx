@@ -49,8 +49,6 @@ public class S2L1BProductReaderPlugIn extends S2ProductReaderPlugIn {
     public DecodeQualification getDecodeQualification(Object input) {
         SystemUtils.LOG.fine("Getting decoders...");
 
-        DecodeQualification decodeQualification = DecodeQualification.UNABLE;
-
         if (!(input instanceof File)) {
             return DecodeQualification.UNABLE;
         }
@@ -60,6 +58,9 @@ public class S2L1BProductReaderPlugIn extends S2ProductReaderPlugIn {
             return DecodeQualification.UNABLE;
         }
 
+        if(!(file.getName().startsWith("S2"))) {
+            return DecodeQualification.UNABLE;
+        }
 
         INamingConvention namingConvention = null;
         try {
