@@ -20,7 +20,7 @@
 
     <groupId>org.esa.s2tbx</groupId>
     <artifactId>s2tbx</artifactId>
-    <version>6.0.0-Skywatch-SNAPSHOT</version>
+    <version>7.0.0-Skywatch-SNAPSHOT</version>
     <name>Sentinel-2 Toolbox</name>
     <description>Tools for the Sentinel-2 Satellite Exploitation</description>
     <url>https://github.com/senbox-org/s2tbx</url>
@@ -68,9 +68,9 @@
     <packaging>pom</packaging>
 
     <properties>
-        <snap.version>6.0.0-Skywatch-SNAPSHOT</snap.version>
-        <s2tbx.version>6.0.0-Skywatch-SNAPSHOT</s2tbx.version>
-        <snap.reader.tests.version>6.0.0-Skywatch-SNAPSHOT</snap.reader.tests.version>
+        <snap.version>7.0.0-Skywatch-SNAPSHOT</snap.version>
+        <s2tbx.version>7.0.0-Skywatch-SNAPSHOT</s2tbx.version>
+        <snap.reader.tests.version>7.0.0-Skywatch-SNAPSHOT</snap.reader.tests.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <user.language>en</user.language>
         <netbeans.version>RELEASE82</netbeans.version>
