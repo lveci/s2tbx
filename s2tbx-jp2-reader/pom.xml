@@ -43,10 +43,10 @@
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>ceres-ui</artifactId>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>org.esa.snap</groupId>
             <artifactId>snap-core</artifactId>
