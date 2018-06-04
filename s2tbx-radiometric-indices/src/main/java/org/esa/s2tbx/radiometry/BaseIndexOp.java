@@ -124,6 +124,13 @@ public abstract class BaseIndexOp extends Operator {
         int sceneWidth = 0, sceneHeight = 0;
         boolean resampleNeeded = !RESAMPLE_NONE.equals(this.resampleType);
         boolean nodataValueUsed = false;
+        for (String bandName : this.sourceBandNames) {
+            Band band = this.sourceProduct.getBand(bandName);
+            if(band.isNoDataValueUsed()) {
+                nodataValueUsed = true;
+            }
+        }
+
         if (resampleNeeded) {
             for (String bandName : this.sourceBandNames) {
                 Band band = this.sourceProduct.getBand(bandName);
@@ -138,9 +145,6 @@ public abstract class BaseIndexOp extends Operator {
                         sceneWidth = bandRasterWidth;
                         sceneHeight = band.getRasterHeight();
                     }
-                }
-                if(band.isNoDataValueUsed()) {
-                    nodataValueUsed = true;
                 }
             }
             this.sourceProduct = resample(this.sourceProduct, sceneWidth, sceneHeight);
